@@ -86,9 +86,8 @@ class EmailConnection:
         self.imap_port = imap_port
         self.imap_server = imaplib.IMAP4(imap_host, imap_port)
 
-
-    def send_email(self, email):
-        self.smtp_server.sendmail(self.sender, self.recipients, email)
+    def send_email(self, message):
+        self.smtp_server.sendmail(self.sender, self.recipients, message)
 
     def __del__(self):
         self.smtp_server.close()
