@@ -1,12 +1,13 @@
-from io import BytesIO
+import email
+from email.mime.text import MIMEText
 import logging
+import smtplib
 
-import socket
 import socketserver
 
-from http.client import parse_headers
 
-import requests
+from server import Forwarder
+
 
 __author__ = 'Michael B. McCoy'
 
@@ -19,36 +20,7 @@ class ParseError(ProxyServerError):
     pass
 
 
-
-class ProxyRequest:
-
-    def __init__(self, raw_request):
-        self.raw = raw_request
-        self.connection = self.response = None
-        self.close_connection = True
-
-        # Parse the raw request into constituents
-        CSRF = b'\r\n'
-        request_lines = self.raw.split(CSRF)
-        request = str(request_lines[0], 'iso-8859-1')
-        try:
-            self.method, self.path, self.version = request.split()
-        except ValueError:
-            self.method, self.path = request.split()
-
-        headers = CSRF.join(request_lines[1:])
-        self.headers = parse_headers(BytesIO(headers))
-
-    def forward(self):
-        """
-        Forward request to its destination. Returns a requests.Response object
-        """
-        logging.debug("path = %s", self.path)
-        self.response = requests.request(method=self.method.lower(), url=self.path, headers=self.headers)
-        return self.response
-
-
-class TCPProxy(socketserver.ThreadingMixIn,
+class TCPProxyHandler(socketserver.ThreadingMixIn,
                socketserver.BaseRequestHandler):
     """
     """
@@ -69,7 +41,7 @@ class TCPProxy(socketserver.ThreadingMixIn,
         logging.debug("%s", data)
 
         # TODO: Handle 100-continue directives?
-        request = ProxyRequest(data)
+        request = Forwarder(data)
         request.forward()
 
         logging.debug("Recieved response\n%s", request.response)
@@ -81,10 +53,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     HOST, PORT = "localhost", 9999
-    logging.debug("Creating server at {}:{}".format(HOST, PORT))
+    logging.debug("Creating proxy server at {}:{}".format(HOST, PORT))
 
     # Create the server, binding to localhost on port 9999
-    tcp_server = socketserver.TCPServer((HOST, PORT), TCPProxy)
+    tcp_server = socketserver.TCPServer((HOST, PORT), TCPProxyHandler)
     logging.debug("Server created.")
 
     logging.debug("Placing server into nonblocking mode.")
