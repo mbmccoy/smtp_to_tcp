@@ -7,7 +7,7 @@ from http.client import parse_headers
 import requests
 import email_utils
 
-from configure import server_settings as settings
+from configure import remote_settings as settings
 
 logger = logging.getLogger(__name__)
 

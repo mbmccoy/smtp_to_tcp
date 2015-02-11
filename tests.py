@@ -1,4 +1,3 @@
-import getpass
 import imaplib
 import sys
 import unittest
@@ -7,6 +6,8 @@ import logging
 import smtplib
 import email.utils
 from email.mime.text import MIMEText
+from configure import proxy_settings as ps
+from configure import remote_settings as rs
 
 import email_utils
 
@@ -21,8 +22,9 @@ class TestEmailUtilities(unittest.TestCase):
         """Check that the filename mangling scheme is consistent."""
         data = object()
         filename = email_utils.hash_filename(data)
-        self.assertEquals(filename, email_utils.hash_filename(
-            email_utils.unhash_filename(filename)))
+        self.assertEqual(filename,
+                         email_utils.hash_filename(
+                             email_utils.unhash_filename(filename)))
 
     def test_packing(self):
         """Test email message packing/unpacking."""
@@ -38,42 +40,42 @@ class TestEmailUtilities(unittest.TestCase):
         payload = email_utils.pack('mccoy@localhost', ['smtp2tcp@localhost'], data)
         logger.debug(payload)
         unpacked = email_utils.unpack(payload)
-        self.assertEquals(unpacked, data)
+        self.assertEqual(unpacked, data)
 
 
 class TestProxy(unittest.TestCase):
+    """Tests for the proxy servers."""
 
     def test_smtp_settings(self):
-        from configure import proxy_settings as sets
+        """Check that the SMTP settings let us log in to the server.
 
-        if sets.SMTP_USE_SSL:
-            server = smtplib.SMTP_SSL(sets.SMTP_SERVER,
-                                      sets.SMTP_PORT)
+        If you get an error here, you probably need to check the environment
+        variables that define the proxy settings.
+
+        """
+        if ps.SMTP_USE_SSL:
+            server = smtplib.SMTP_SSL(ps.SMTP_SERVER,
+                                      ps.SMTP_PORT)
 
         else:
-            server = smtplib.SMTP(sets.SMTP_SERVER, sets.SMTP_PORT)
-
-        try:
-            server.login(sets.SMTP_USER, sets.SMTP_PASSWORD)
-        except smtplib.SMTPConnectError:
-            logging.error("Unable to log in to the SMTP server. "
-                          "Check your SMTP settings in configure.py")
-            raise
+            server = smtplib.SMTP(ps.SMTP_SERVER, ps.SMTP_PORT)
+        server.login(ps.SMTP_USER, ps.SMTP_PASSWORD)
+        server.close()
 
     def test_imap_settings(self):
-        from configure import proxy_settings as sets
+        """Check that the IMAP settings let us log in to the server
 
-        if sets.IMAP_USE_SSL:
-            server = imaplib.IMAP4_SSL(sets.IMAP_SERVER, sets.IMAP_PORT)
+        If you get an error here, you probably need to check the environment
+        variables that define the remote server settings.
+        """
+        if ps.IMAP_USE_SSL:
+            server = imaplib.IMAP4_SSL(ps.IMAP_SERVER, ps.IMAP_PORT)
         else:
-            server = imaplib.IMAP4(sets.IMAP_SERVER, sets.IMAP_PORT)
+            server = imaplib.IMAP4(ps.IMAP_SERVER, ps.IMAP_PORT)
 
-        try:
-            server.login(sets.IMAP_USER, sets.IMAP_PASSWORD)
-        except ConnectionRefusedError:
-            logging.error("Unable to log in to the IMAP server. "
-                          "Check your IMAP settings in configure.py.")
-            raise
+        server.login(ps.IMAP_USER, ps.IMAP_PASSWORD)
+        server.select()
+        server.close()
 
 
 class TestServer(unittest.TestCase):
@@ -85,12 +87,13 @@ class TestServer(unittest.TestCase):
         msg['Subject'] = 'Simple test message'
 
         logger.debug('logging in')
-        smtp_server = smtplib.SMTP('127.0.0.1', 1111)
+        smtp_server = smtplib.SMTP(rs.SMTP_HOST, rs.SMTP_PORT)
         smtp_server.set_debuglevel(True)  # show communication with the server
         logger.debug('done')
         try:
             logger.debug('sending')
-            smtp_server.sendmail('author@example.com', ['recipient@example.com'], msg.as_string())
+            smtp_server.sendmail('author@example.com', ['recipient@example.com'],
+                                 msg.as_string())
             logger.debug('done')
         finally:
             smtp_server.quit()

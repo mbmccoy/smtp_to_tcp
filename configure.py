@@ -8,6 +8,7 @@ override the settings using environment variables, not by changing the default s
 given here.
 
 """
+import getpass
 import os
 import smtplib
 import imaplib
@@ -15,7 +16,43 @@ import imaplib
 import logging
 
 
-class ProxySettings:
+class BaseSettings:
+    """Default settings container"""
+    def __init__(self, ):
+        self._configured = False
+
+        # Convert class attributes to instance attributes
+        for key, val in type(self).__dict__.items():
+            if not key.startswith('_'):
+                self.__dict__[key] = val
+
+    def configure(self, prompt_for_blank=True, prompt_prefix=None, **kwargs):
+        """Fill in blank settings
+
+        :param prompt_for_blank: Prompt to fill in blank settings
+        :param prompt_prefix: Restrict prompts to settings that start with this prefix.
+        """
+
+        # First, set the key-value pairs:
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        # Now prompt the user for the empty strings
+        for key, value in self.__dict__.items():
+            if prompt_prefix and not key.startswith(prompt_prefix):
+                continue
+            if not value and isinstance(value, str) and prompt_for_blank:
+                prompt_string = ' '.join(key.lower().split('_')) + ': '
+                # Don't let passwords get echoed:
+                if 'pass' in key.lower():
+                    setattr(self, key, getpass.getpass(prompt_string))
+                else:
+                    setattr(self, key, input(prompt_string))
+
+        self._configured = True
+
+
+class ProxySettings(BaseSettings):
     """Container for proxy settings"""
 
     # Example settings follow in comments.
@@ -43,14 +80,15 @@ class ProxySettings:
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
 
-class ServerSettings:
+class RemoteSettings(BaseSettings):
     """Container for server settings"""
 
     LOGGING_LEVEL = logging.DEBUG
 
+    SMTP_USE_SSL = False  # TODO: Support SSL for the server?
     SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
     SMTP_PORT = os.environ.get('SMTP_PORT', smtplib.SMTP_PORT)
 
 
 proxy_settings = ProxySettings()
-server_settings = ServerSettings()
+remote_settings = RemoteSettings()
