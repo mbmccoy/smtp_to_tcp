@@ -12,9 +12,13 @@ import os
 import smtplib
 import imaplib
 
+import logging
+
 
 class ProxySettings:
     """Container for proxy settings"""
+
+    LOGGING_LEVEL = logging.DEBUG
 
     # SMTP settings
     SMTP_SERVER = os.environ.get('SMTP_SERVER', '')
@@ -34,6 +38,12 @@ class ProxySettings:
 
 class ServerSettings:
     """Container for server settings"""
-    pass
+
+    LOGGING_LEVEL = logging.DEBUG
+
+    SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
+    SMTP_PORT = os.environ.get('SMTP_PORT', smtplib.SMTP_PORT)
 
 
+proxy_settings = ProxySettings()
+server_settings = ServerSettings()

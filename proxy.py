@@ -13,11 +13,16 @@ __author__ = 'Michael B. McCoy'
 logger = logging.getLogger(__name__)
 
 
+# Exceptions
 class ProxyServerError(Exception):
     pass
 
 
 class ParseError(ProxyServerError):
+    pass
+
+
+class SMTPError(ProxyServerError):
     pass
 
 

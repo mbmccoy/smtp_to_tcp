@@ -7,6 +7,7 @@ from http.client import parse_headers
 import requests
 import email_utils
 
+from configure import server_settings as settings
 
 logger = logging.getLogger(__name__)
 
@@ -80,17 +81,15 @@ class TCPTunnelServer(SMTPServer):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=settings.LOGGING_LEVEL)
 
-    host = 'localhost'
-    port = 1111
+    host = settings.SMTP_HOST
+    port = settings.SMTP_PORT
     logger.debug('Starting server on %s:%d', host, port)
     server = TCPTunnelServer((host, port), None)
-    logger.debug('Server started.')
 
     logger.debug('Starting asyncore loop.')
     try:
         asyncore.loop()
     finally:
         logger.debug('Loop finished.')
-

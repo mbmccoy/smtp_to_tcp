@@ -1,4 +1,5 @@
 import getpass
+import imaplib
 import sys
 import unittest
 import logging
@@ -8,7 +9,8 @@ import email.utils
 from email.mime.text import MIMEText
 
 import email_utils
-from settings import proxy_settings
+import proxy
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +45,25 @@ class TestEmailUtilities(unittest.TestCase):
 class TestSettings(unittest.TestCase):
 
     def test_smtp_settings(self):
-        from s import proxy_settings as p_sets
+        from configure import proxy_settings as sets
 
-        if p_sets.SMTP_USE_SSL:
-            server = smtplib.SMTP_SSL(p_sets.SMTP_SERVER,
-                                      p_sets.SMTP_PORT)
+        if sets.SMTP_USE_SSL:
+            server = smtplib.SMTP_SSL(sets.SMTP_SERVER,
+                                      sets.SMTP_PORT)
+        else:
+            server = smtplib.SMTP(sets.SMTP_SERVER, sets.SMTP_PORT)
 
-        username = p_sets.SMTP_USER or input("SMTP username: ")
-        password = p_sets.SMTP_PASSWORD or getpass.getpass("SMTP password: ")
-        server.login(username, password)
+        try:
+            server.login(sets.SMTP_USER, sets.SMTP_PASSWORD)
+        except smtplib.SMTPConnectError:
+            logging.error("Unable to log in to the SMTP server. "
+                          "Check your SMTP settings in configure.py")
+            raise
+
+    def test_imap_settings(self):
+        from configure import server_settings as sets
+
+
 
 
 class TestServer(unittest.TestCase):
