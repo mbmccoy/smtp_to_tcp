@@ -3,61 +3,38 @@
 settings.py
 ===========
 
-Defines the default settings for the server and the proxy. For the most part, you should
+Defines the default settings for the server and the proxy. It's best practice to
 override the settings using environment variables, not by changing the default settings
 given here.
 
------
-Usage
------
-You should import the proxy_settings or the server_settings object from this file (inspired
-by Django's method for settings), and not instantiate the class yourself.
-
-   >>> from settings import proxy_settings
-   >>> try:
-           proxy_settings.SMTP_USE_SSL
-
 """
-import getpass
 import os
+import smtplib
+import imaplib
 
 
-class BaseSettings:
-    """Default settings container"""
-    def __init__(self, ):
-        self._configured = False
-        # Convert class attributes to instance attributes
-        for key, val in type(self).__dict__.items():
-            if not key.startswith('_'):
-                self.__dict__[key] = val
-
-    def prompt_for_blank(self):
-        """Prompt to fill in values for missing settings."""
-        for key, value in self.__dict__.items():
-            if not value and isinstance(value, str):
-                prompt_string = ' '.join(key.lower().split('_')) + ': '
-                if 'pass' in key.lower():
-                    setattr(self, key, getpass.getpass(prompt_string))
-                else:
-                    setattr(self, key, input(prompt_string))
-        self._configured = True
-
-
-class DefaultProxySettings(BaseSettings):
+class ProxySettings:
     """Container for proxy settings"""
-    SMTP_USE_SSL = True
+
+    # SMTP settings
     SMTP_SERVER = os.environ.get('SMTP_SERVER', '')
     SMTP_USER = os.environ.get('SMTP_USER', '')
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 
-    IMAP_SERVER = os.environ.get('IMAP_SERVER', '')
-    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', '')
+    SMTP_USE_SSL = True
+    SMTP_PORT = SMTP_USE_SSL and smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
 
+    # IMAP settings
+    IMAP_SERVER = os.environ.get('IMAP_SERVER', SMTP_SERVER)
+    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', SMTP_PASSWORD)
 
-class DefaultServerSettings(BaseSettings):
-    """Container for server setttings"""
+    IMAP_USE_SSL = True
+    IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
+
+proxy_settings = ProxySettings()
+
+class ServerSettings:
+    """Container for server settings"""
     pass
 
 
-proxy_settings = DefaultProxySettings()
-server_settings = DefaultServerSettings()

@@ -8,7 +8,7 @@ import email.utils
 from email.mime.text import MIMEText
 
 import email_utils
-import settings
+from settings import proxy_settings
 
 logger = logging.getLogger(__name__)
 
@@ -40,21 +40,18 @@ class TestEmailUtilities(unittest.TestCase):
         self.assertEquals(unpacked, data)
 
 
-class TestSMTP(unittest.TestCase):
-
-    def test_smtp_ssl(self):
-        server = smtplib.SMTP_SSL('mail.mikebmccoy.net', port=465)
-        username = settings.SMTP_USER or input("SMTP username: ")
-        password = settings.SMTP_PASSWORD or getpass.getpass("SMTP password: ")
-        server.login(username, password)
-
-
 class TestSettings(unittest.TestCase):
 
-    def test_settings(self):
-        from settings import proxy_settings
-        proxy_settings = settings.ProxySettings(
-            SMTP_PASSWORD='12345', IMAP_PASSWORD='234',)
+    def test_smtp_settings(self):
+        from settings import proxy_settings as p_sets
+
+        if p_sets.SMTP_USE_SSL:
+            server = smtplib.SMTP_SSL(p_sets.SMTP_SERVER,
+                                      p_sets.SMTP_PORT)
+        
+        username = p_sets.SMTP_USER or input("SMTP username: ")
+        password = p_sets.SMTP_PASSWORD or getpass.getpass("SMTP password: ")
+        server.login(username, password)
 
 
 class TestServer(unittest.TestCase):
