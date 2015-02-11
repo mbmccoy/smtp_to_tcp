@@ -12,6 +12,7 @@ import settings
 
 logger = logging.getLogger(__name__)
 
+
 class TestEmailUtilities(unittest.TestCase):
     """Tests for encoding and decoding filenames assocated with data"""
 
@@ -48,6 +49,14 @@ class TestSMTP(unittest.TestCase):
         server.login(username, password)
 
 
+class TestSettings(unittest.TestCase):
+
+    def test_settings(self):
+        from settings import proxy_settings
+        proxy_settings = settings.ProxySettings(
+            SMTP_PASSWORD='12345', IMAP_PASSWORD='234',)
+
+
 class TestServer(unittest.TestCase):
 
     def test_server(self):
@@ -66,6 +75,7 @@ class TestServer(unittest.TestCase):
             logger.debug('done')
         finally:
             smtp_server.quit()
+
 
 
 if __name__ == '__main__':
