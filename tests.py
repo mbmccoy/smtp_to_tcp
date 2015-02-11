@@ -43,12 +43,12 @@ class TestEmailUtilities(unittest.TestCase):
 class TestSettings(unittest.TestCase):
 
     def test_smtp_settings(self):
-        from settings import proxy_settings as p_sets
+        from s import proxy_settings as p_sets
 
         if p_sets.SMTP_USE_SSL:
             server = smtplib.SMTP_SSL(p_sets.SMTP_SERVER,
                                       p_sets.SMTP_PORT)
-        
+
         username = p_sets.SMTP_USER or input("SMTP username: ")
         password = p_sets.SMTP_PASSWORD or getpass.getpass("SMTP password: ")
         server.login(username, password)

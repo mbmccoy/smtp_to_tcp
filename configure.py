@@ -31,7 +31,6 @@ class ProxySettings:
     IMAP_USE_SSL = True
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
-proxy_settings = ProxySettings()
 
 class ServerSettings:
     """Container for server settings"""
