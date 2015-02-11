@@ -5,9 +5,10 @@ from smtpd import SMTPServer
 from http.client import parse_headers
 
 import requests
+import sys
 import email_utils
 
-from configure import remote_settings as settings
+from configure import remote_settings as rs
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,8 @@ class Forwarder:
         Forward request to its destination. Returns a requests.Response object
         """
         logger.debug("path = %s", self.path)
-        self.response = requests.request(method=self.method.lower(), url=self.path, headers=self.headers)
+        self.response = requests.request(method=self.method.lower(),
+                                         url=self.path, headers=self.headers)
         return self.response
 
 
@@ -80,16 +82,27 @@ class TCPTunnelServer(SMTPServer):
         logger.debug(message)
 
 
-if __name__ == '__main__':
-    logging.basicConfig(level=settings.LOGGING_LEVEL)
+def run_server(**kwargs):
+    """Run the remote server forever
 
-    host = settings.SMTP_HOST
-    port = settings.SMTP_PORT
+    Key-value parameters are taken to be settings.
+    """
+    rs.configure(**kwargs)
+
+    logging.basicConfig(level=rs.LOGGING_LEVEL)
+    host = rs.SMTP_HOST
+    port = rs.SMTP_PORT
+
     logger.debug('Starting server on %s:%d', host, port)
-    server = TCPTunnelServer((host, port), None)
+    remote_server = TCPTunnelServer((host, port), None)
 
     logger.debug('Starting asyncore loop.')
     try:
         asyncore.loop()
     finally:
         logger.debug('Loop finished.')
+        remote_server.close()
+
+
+if __name__ == '__main__':
+    sys.exit(run_server())

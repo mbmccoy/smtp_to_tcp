@@ -56,7 +56,6 @@ class TestProxy(unittest.TestCase):
         if ps.SMTP_USE_SSL:
             server = smtplib.SMTP_SSL(ps.SMTP_SERVER,
                                       ps.SMTP_PORT)
-
         else:
             server = smtplib.SMTP(ps.SMTP_SERVER, ps.SMTP_PORT)
         server.login(ps.SMTP_USER, ps.SMTP_PASSWORD)
@@ -78,7 +77,11 @@ class TestProxy(unittest.TestCase):
         server.close()
 
 
-class TestServer(unittest.TestCase):
+class TestRemote(unittest.TestCase):
+
+    def setUp(self):
+        # TODO: Spin up remote server on localhost
+        pass
 
     def test_server(self):
         msg = MIMEText('This is the body of the message.')

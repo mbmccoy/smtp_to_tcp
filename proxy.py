@@ -4,8 +4,7 @@ import smtplib
 import imaplib
 import socketserver
 import getpass
-
-from server import Forwarder
+from remote import Forwarder
 
 __author__ = 'Michael B. McCoy'
 

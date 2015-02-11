@@ -66,7 +66,7 @@ class ProxySettings(BaseSettings):
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # BaDPaSSwOrd
 
     # You must use SSL for most commercial SMTP servers e.g gmail
-    SMTP_USE_SSL = True
+    SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', ''))
 
     # Use default ports for SSL or unencrypted
     SMTP_PORT = SMTP_USE_SSL and smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
@@ -76,7 +76,7 @@ class ProxySettings(BaseSettings):
     IMAP_USER = os.environ.get('IMAP_USER', SMTP_USER)
     IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', SMTP_PASSWORD)
 
-    IMAP_USE_SSL = True
+    IMAP_USE_SSL = bool(os.environ.get('IMAP_USE_SSL', ''))
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
 
