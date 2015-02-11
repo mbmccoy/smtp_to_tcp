@@ -42,7 +42,7 @@ class TestEmailUtilities(unittest.TestCase):
         self.assertEquals(unpacked, data)
 
 
-class TestSettings(unittest.TestCase):
+class TestProxy(unittest.TestCase):
 
     def test_smtp_settings(self):
         from configure import proxy_settings as sets
@@ -61,7 +61,15 @@ class TestSettings(unittest.TestCase):
             raise
 
     def test_imap_settings(self):
-        from configure import server_settings as sets
+        from configure import proxy_settings as sets
+
+        if sets.IMAP_USE_SSL:
+            server = imaplib.IMAP4_SSL(sets.IMAP_SERVER, sets.IMAP_PORT)
+        else:
+            server = imaplib.IMAP4(sets.IMAP_SERVER, sets.IMAP_PORT)
+
+        try:
+            server.login(sets.IMAP_USER, sets.IMAP_PASSWORD)
 
 
 
