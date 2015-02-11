@@ -2,7 +2,7 @@ from io import BytesIO
 import asyncore
 import logging
 from smtpd import SMTPServer
-from http.client import parse_headers
+from http.client import parse_headers, email
 
 import requests
 import sys
@@ -13,8 +13,10 @@ from configure import remote_settings as rs
 logger = logging.getLogger(__name__)
 
 
-class Forwarder:
+class RemoteServerException(Exception):
+    pass
 
+class Forwarder:
     def __init__(self, raw_request):
         self.raw = raw_request
         self.connection = self.response = None
@@ -24,25 +26,33 @@ class Forwarder:
         csrf = b'\r\n'
         request_lines = self.raw.split(csrf)
         request = str(request_lines[0], 'iso-8859-1')
-        try:
-            self.method, self.path, self.version = request.split()
-        except ValueError:
-            self.method, self.path = request.split()
+        split = request.split()
 
+        if len(split) == 3:
+            self.method, self.path, self.version = request.split()
+        elif len(split) == 2:
+            self.method, self.path = request.split()
+        else:
+            # TODO: More refined error-checking?
+            logging.error('Bad request:\n%s', request)
+            raise RemoteServerException('Bad request')
         headers = csrf.join(request_lines[1:])
         self.headers = parse_headers(BytesIO(headers))
 
     def forward(self):
         """
-        Forward request to its destination. Returns a requests.Response object
+        Forward request to its destination. Returns a
+        requests.Response object
         """
         logger.debug("path = %s", self.path)
-        self.response = requests.request(method=self.method.lower(),
-                                         url=self.path, headers=self.headers)
+        self.response = requests.request(
+            method=self.method.lower(),
+            url=self.path, headers=self.headers)
         return self.response
 
 
-def log_message(peer, mail_from, recipient_list, data, logging_level=logging.DEBUG):
+def log_message(peer, mail_from, recipient_list, data,
+                logging_level=logging.DEBUG):
     """Log the email message.
 
     :param peer: Peer host from the SMTP server.
@@ -77,9 +87,17 @@ def log_message(peer, mail_from, recipient_list, data, logging_level=logging.DEB
 class TCPTunnelServer(SMTPServer):
 
     def process_message(self, peer, mail_from, recipient_list, data):
-        log_message(peer, mail_from, recipient_list, data)
-        message = email_utils.unpack(data)
-        logger.debug(message)
+        message = email_utils.unpack(email.message_from_string(data))
+        logger.debug('Received message:\n%s', message)
+        logger.debug('Forwarding...')
+        try:
+            response = Forwarder(message).forward()
+        except RemoteServerException:
+            logger.error('Caught exception; no response possible.')
+            return
+        logger.debug('Response:\n%s', response)
+
+
 
 
 def run(**kwargs):

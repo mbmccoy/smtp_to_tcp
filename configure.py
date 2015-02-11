@@ -100,5 +100,6 @@ class RemoteSettings(BaseSettings):
     SMTP_PORT = int(os.environ.get('SMTP_PORT', smtplib.SMTP_PORT))
 
 
+
 proxy_settings = ProxySettings()
 remote_settings = RemoteSettings()

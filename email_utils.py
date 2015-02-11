@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 
 import smtplib
 import imaplib
@@ -12,6 +13,12 @@ __author__ = '__mccoy__'
 
 logger = logging.getLogger(__name__)
 
+
+class EmailException(Exception):
+    pass
+
+class FormatException(Exception):
+    pass
 
 def hash_filename(data):
     """Convert data into a unique filename"""
@@ -41,7 +48,7 @@ def pack(mail_from, recipient_list, data):
 
     # Add to base message
     email.encoders.encode_base64(attachment)
-    attachment.add_header('Content Disposition', 'attachment', filename=hash_filename(data))
+    attachment.add_header('Content-Disposition', 'attachment', filename=hash_filename(data))
     package.attach(attachment)
 
     return package
@@ -63,9 +70,12 @@ def unpack(message):
     for part in message.walk():
         if part.get_content_maintype() == 'multipart':
             continue
+        filename = part.get_filename()
+        if not filename:
+            logger.error("", filename)
+            continue
         payload = part.get_payload(decode=True)
         logger.debug("Email payload: %s", payload)
-
     return payload
 
 

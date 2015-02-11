@@ -3,15 +3,15 @@ import os
 import sys
 import unittest
 import logging
+import signal
 
 import multiprocessing
 
 import smtplib
 import email.utils
 from email.mime.text import MIMEText
-import signal
+
 from configure import proxy_settings as ps, RemoteSettings
-from configure import remote_settings as rs
 
 import email_utils
 import proxy
@@ -23,6 +23,16 @@ logger = logging.getLogger(__name__)
 class TestEmailUtilities(unittest.TestCase):
     """Tests for encoding and decoding filenames assocated with data"""
 
+    request = b'GET http://www.google.com/favicon.ico HTTP/1.1\r\n' \
+              b'Host: www.google.com\r\n' \
+              b'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10;' \
+              b' rv:34.0) Gecko/20100101 Firefox/34.0\r\n' \
+              b'Accept: image/png,image/*;q=0.8,*/*;q=0.5\r\n' \
+              b'Accept-Language: en-US,en;q=0.5\r\n' \
+              b'Accept-Encoding: gzip, deflate\r\n' \
+              b'Cookie: _ga=; JobsSrc=; OGPC=5061451-1:5061416-1:\r\n' \
+              b'Connection: keep-alive\r\n\r\n'
+
     def test_hash(self):
         """Check that the filename mangling scheme is consistent."""
         data = object()
@@ -33,22 +43,13 @@ class TestEmailUtilities(unittest.TestCase):
 
     def test_packing(self):
         """Test email message packing/unpacking."""
-        data = b'GET http://www.google.com/favicon.ico HTTP/1.1\r\n' \
-               b'Host: www.google.com\r\n' \
-               b'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10;' \
-               b' rv:34.0) Gecko/20100101 Firefox/34.0\r\n' \
-               b'Accept: image/png,image/*;q=0.8,*/*;q=0.5\r\n' \
-               b'Accept-Language: en-US,en;q=0.5\r\n' \
-               b'Accept-Encoding: gzip, deflate\r\n' \
-               b'Cookie: _ga=; JobsSrc=; OGPC=5061451-1:5061416-1:\r\n' \
-               b'Connection: keep-alive\r\n\r\n'
 
         payload = email_utils.pack('mccoy@localhost',
                                    ['smtp2tcp@localhost'],
-                                   data)
+                                   self.request)
         logger.debug(payload)
         unpacked = email_utils.unpack(payload)
-        self.assertEqual(unpacked, data)
+        self.assertEqual(unpacked, self.request)
 
 
 class TestProxy(unittest.TestCase):
@@ -118,15 +119,10 @@ class TestRemote(unittest.TestCase):
 
     def test_server_connection(self):
         # Check that we can send email to the remote server
-        msg = MIMEText('This is the body of the message.')
-        msg['To'] = email.utils.formataddr(
-            ('Recipient', 'recipient@example.com'))
-        msg['From'] = email.utils.formataddr(
-            ('Author', 'author@example.com'))
-        msg['Subject'] = 'Simple test message'
+        payload = email_utils.pack('server@example.com', ['author@localhost.com'],
+                               TestEmailUtilities.request)
 
         logger.debug('logging in')
-
         smtp_server = smtplib.SMTP(self.settings.SMTP_HOST,
                                    self.settings.SMTP_PORT)
         logger.debug('done')
@@ -134,7 +130,7 @@ class TestRemote(unittest.TestCase):
             logger.debug('sending')
             smtp_server.sendmail('author@example.com',
                                  ['recipient@example.com'],
-                                 msg.as_string())
+                                 payload.as_string())
             logger.debug('done')
         finally:
             smtp_server.quit()
