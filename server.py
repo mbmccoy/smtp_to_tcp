@@ -7,6 +7,7 @@ from http.client import parse_headers
 import requests
 import email_utils
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,18 +40,33 @@ class Forwarder:
 
 
 def log_message(peer, mail_from, recipient_list, data, logging_level=logging.DEBUG):
+    """Log the email message.
+
+    :param peer: Peer host from the SMTP server.
+    :param mail_from: `From` email address
+    :param recipient_list: List of `To` email addresses.
+    :param data: Raw message data.
+    :param logging_level: Level to log. Default is `logging.DEBUG`.
+
+    :return: None
+    """
+
+    # Shortcut return
     if not logger.isEnabledFor(logging_level):
         return
+
     is_in_headers = True
     lines = data.split('\n')
-    logger.log(logging_level, 'From: %s', mail_from)
-    logger.log(logging_level, 'To: %s', recipient_list)
-    logger.log(logging_level, '---------- MESSAGE FOLLOWS ----------')
+
+    msg = '\n'
+    msg += 'From: %s' % mail_from
+    msg += 'To: %s' % recipient_list
+    msg += '---------- MESSAGE FOLLOWS ----------'
     for line in lines:
         # headers first
         if is_in_headers and not line:
             is_in_headers = False
-            logger.debug('X-Peer: %s', peer[0])
+            msg += 'X-Peer: %s:%d' % (peer[0], peer[1])
         logger.log(logging_level, line)
     logger.log(logging_level, '------------ END MESSAGE ------------')
 
@@ -60,7 +76,7 @@ class TCPTunnelServer(SMTPServer):
     def process_message(self, peer, mail_from, recipient_list, data):
         log_message(peer, mail_from, recipient_list, data)
         message = email_utils.unpack(data)
-        logging.debug(message)
+        logger.debug(message)
 
 
 if __name__ == '__main__':
@@ -68,13 +84,13 @@ if __name__ == '__main__':
 
     host = 'localhost'
     port = 1111
-    logging.debug('Starting server on %s:%d', host, port)
+    logger.debug('Starting server on %s:%d', host, port)
     server = TCPTunnelServer((host, port), None)
-    logging.debug('Server statrted.')
+    logger.debug('Server statrted.')
 
-    logging.debug('Starting asyncore loop.')
+    logger.debug('Starting asyncore loop.')
     try:
         asyncore.loop()
     finally:
-        logging.debug('Loop finished.')
+        logger.debug('Loop finished.')
 

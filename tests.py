@@ -2,10 +2,15 @@ import sys
 import unittest
 import logging
 
+import smtplib
+import email.utils
+from email.mime.text import MIMEText
+
 import email_utils
 
+logger = logging.getLogger(__name__)
 
-class TestEmailServices(unittest.TestCase):
+class TestEmailUtilities(unittest.TestCase):
     """Tests for encoding and decoding filenames assocated with data"""
 
     def test_hash(self):
@@ -27,13 +32,30 @@ class TestEmailServices(unittest.TestCase):
                b'Connection: keep-alive\r\n\r\n'
 
         payload = email_utils.pack('mccoy@localhost', ['smtp2tcp@localhost'], data)
-        logging.debug(payload)
+        logger.debug(payload)
         unpacked = email_utils.unpack(payload)
         self.assertEquals(unpacked, data)
 
 
 
+class TestServer(unittest.TestCase):
 
+    def test_server(self):
+        msg = MIMEText('This is the body of the message.')
+        msg['To'] = email.utils.formataddr(('Recipient', 'recipient@example.com'))
+        msg['From'] = email.utils.formataddr(('Author', 'author@example.com'))
+        msg['Subject'] = 'Simple test message'
+
+        logger.debug('logging in')
+        smtp_server = smtplib.SMTP('127.0.0.1', 1111)
+        smtp_server.set_debuglevel(True)  # show communication with the server
+        logger.debug('done')
+        try:
+            logger.debug('sendin')
+            smtp_server.sendmail('author@example.com', ['recipient@example.com'], msg.as_string())
+            logger.debug('done')
+        finally:
+            smtp_server.quit()
 
 
 if __name__ == '__main__':

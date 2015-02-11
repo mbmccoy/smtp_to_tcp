@@ -1,6 +1,7 @@
 import logging
 
 import socketserver
+import email_utils
 
 from server import Forwarder
 
@@ -22,6 +23,7 @@ class TCPProxyHandler(socketserver.ThreadingMixIn,
     """
     """
     chunk_size = 4096
+    emailer = email_utils.EmailConnection()
 
     def handle(self):
         logger.debug("%s connected", self.client_address[0])

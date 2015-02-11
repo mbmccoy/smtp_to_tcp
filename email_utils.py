@@ -55,8 +55,9 @@ def unpack(message):
     elif isinstance(message, bytes):
         message = email.message_from_bytes(message)
 
-    if not isinstance(message, MIMEBase):
-        raise TypeError('Argument message must be either str, bytes, or MIME email message')
+    if not isinstance(message, email.message.Message):
+        raise TypeError('Argument message must be either str, bytes, or MIME email message, not type {}'.format(
+            type(message)))
 
     payload = None
     for part in message.walk():
