@@ -82,7 +82,7 @@ class TCPTunnelServer(SMTPServer):
         logger.debug(message)
 
 
-def run_server(**kwargs):
+def run(**kwargs):
     """Run the remote server forever
 
     Key-value parameters are taken to be settings.
@@ -105,4 +105,4 @@ def run_server(**kwargs):
 
 
 if __name__ == '__main__':
-    sys.exit(run_server())
+    sys.exit(run())

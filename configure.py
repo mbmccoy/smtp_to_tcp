@@ -3,10 +3,9 @@
 settings.py
 ===========
 
-Defines the default settings for the server and the proxy. It's best practice to
-override the settings using environment variables, not by changing the default settings
-given here.
-
+Defines the default settings for the server and the proxy. It's best
+practice to override the settings using environment variables, not
+by changing the default settings given here.
 """
 import getpass
 import os
@@ -18,7 +17,7 @@ import logging
 
 class BaseSettings:
     """Default settings container"""
-    def __init__(self, ):
+    def __init__(self, **kwargs):
         self._configured = False
 
         # Convert class attributes to instance attributes
@@ -26,11 +25,15 @@ class BaseSettings:
             if not key.startswith('_'):
                 self.__dict__[key] = val
 
+        if kwargs:
+            self.configure(**kwargs)
+
     def configure(self, prompt_for_blank=True, prompt_prefix=None, **kwargs):
         """Fill in blank settings
 
         :param prompt_for_blank: Prompt to fill in blank settings
-        :param prompt_prefix: Restrict prompts to settings that start with this prefix.
+        :param prompt_prefix: Restrict prompts to settings that start
+        with this prefix.
         """
 
         # First, set the key-value pairs:
@@ -50,6 +53,13 @@ class BaseSettings:
                     setattr(self, key, input(prompt_string))
 
         self._configured = True
+
+    def settings(self):
+        """Dictionary of all settings defined."""
+        return {
+            key: val for key, val in self.__dict__.items()
+            if not key.startswith('_')
+        }
 
 
 class ProxySettings(BaseSettings):
@@ -87,7 +97,7 @@ class RemoteSettings(BaseSettings):
 
     SMTP_USE_SSL = False  # TODO: Support SSL for the server?
     SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
-    SMTP_PORT = os.environ.get('SMTP_PORT', smtplib.SMTP_PORT)
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', smtplib.SMTP_PORT))
 
 
 proxy_settings = ProxySettings()

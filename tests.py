@@ -1,16 +1,21 @@
 import imaplib
+import os
 import sys
 import unittest
 import logging
 
+import multiprocessing
+
 import smtplib
 import email.utils
 from email.mime.text import MIMEText
-from configure import proxy_settings as ps
+import signal
+from configure import proxy_settings as ps, RemoteSettings
 from configure import remote_settings as rs
 
 import email_utils
-
+import proxy
+import remote
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +35,17 @@ class TestEmailUtilities(unittest.TestCase):
         """Test email message packing/unpacking."""
         data = b'GET http://www.google.com/favicon.ico HTTP/1.1\r\n' \
                b'Host: www.google.com\r\n' \
-               b'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:34.0) Gecko/20100101 Firefox/34.0\r\n' \
+               b'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10;' \
+               b' rv:34.0) Gecko/20100101 Firefox/34.0\r\n' \
                b'Accept: image/png,image/*;q=0.8,*/*;q=0.5\r\n' \
                b'Accept-Language: en-US,en;q=0.5\r\n' \
                b'Accept-Encoding: gzip, deflate\r\n' \
                b'Cookie: _ga=; JobsSrc=; OGPC=5061451-1:5061416-1:\r\n' \
                b'Connection: keep-alive\r\n\r\n'
 
-        payload = email_utils.pack('mccoy@localhost', ['smtp2tcp@localhost'], data)
+        payload = email_utils.pack('mccoy@localhost',
+                                   ['smtp2tcp@localhost'],
+                                   data)
         logger.debug(payload)
         unpacked = email_utils.unpack(payload)
         self.assertEqual(unpacked, data)
@@ -49,8 +57,8 @@ class TestProxy(unittest.TestCase):
     def test_smtp_settings(self):
         """Check that the SMTP settings let us log in to the server.
 
-        If you get an error here, you probably need to check the environment
-        variables that define the proxy settings.
+        If you get an error here, you probably need to check the
+        environment variables that define the proxy settings.
 
         """
         if ps.SMTP_USE_SSL:
@@ -64,8 +72,8 @@ class TestProxy(unittest.TestCase):
     def test_imap_settings(self):
         """Check that the IMAP settings let us log in to the server
 
-        If you get an error here, you probably need to check the environment
-        variables that define the remote server settings.
+        If you get an error here, you probably need to check the
+        environment variables that define the remote server settings.
         """
         if ps.IMAP_USE_SSL:
             server = imaplib.IMAP4_SSL(ps.IMAP_SERVER, ps.IMAP_PORT)
@@ -80,22 +88,52 @@ class TestProxy(unittest.TestCase):
 class TestRemote(unittest.TestCase):
 
     def setUp(self):
-        # TODO: Spin up remote server on localhost
-        pass
+        """Set up a local server on another process"""
+        self.settings = RemoteSettings(
+            SMTP_HOST='localhost', SMTP_PORT=1111)
 
-    def test_server(self):
+        remote_smtp_server = multiprocessing.Process(
+            target=remote.run, kwargs=self.settings.settings(),)
+        remote_smtp_server.daemon = True
+
+        logging.debug("Spinning up remote SMTP server emulator...")
+        remote_smtp_server.start()
+        remote_smtp_server.join(0.25)  # Pause to spin up
+        logging.debug("Done.")
+        self.remote_smtp_server = remote_smtp_server
+
+    def tearDown(self):
+        """Shut down the remote server"""
+        # Shut down the remote server using a keyboard interrupt
+        if self.remote_smtp_server.exitcode is None:
+            logger.debug("Stopping remote server with SIGINT...")
+            os.kill(self.remote_smtp_server.pid, signal.SIGINT)
+            self.remote_smtp_server.join(0.5)
+        if self.remote_smtp_server.exitcode is None:
+            logger.error("Remote server is not responding. "
+                         "pid: {}".format(self.remote_smtp_server.pid))
+        else:
+            logger.debug("Remote server successfully killed "
+                         "(ignore the the traceback)")
+
+    def test_server_connection(self):
+        # Check that we can send email to the remote server
         msg = MIMEText('This is the body of the message.')
-        msg['To'] = email.utils.formataddr(('Recipient', 'recipient@example.com'))
-        msg['From'] = email.utils.formataddr(('Author', 'author@example.com'))
+        msg['To'] = email.utils.formataddr(
+            ('Recipient', 'recipient@example.com'))
+        msg['From'] = email.utils.formataddr(
+            ('Author', 'author@example.com'))
         msg['Subject'] = 'Simple test message'
 
         logger.debug('logging in')
-        smtp_server = smtplib.SMTP(rs.SMTP_HOST, rs.SMTP_PORT)
-        smtp_server.set_debuglevel(True)  # show communication with the server
+
+        smtp_server = smtplib.SMTP(self.settings.SMTP_HOST,
+                                   self.settings.SMTP_PORT)
         logger.debug('done')
         try:
             logger.debug('sending')
-            smtp_server.sendmail('author@example.com', ['recipient@example.com'],
+            smtp_server.sendmail('author@example.com',
+                                 ['recipient@example.com'],
                                  msg.as_string())
             logger.debug('done')
         finally:
@@ -104,5 +142,4 @@ class TestRemote(unittest.TestCase):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-
     sys.exit(unittest.main())
