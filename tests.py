@@ -9,7 +9,6 @@ import email.utils
 from email.mime.text import MIMEText
 
 import email_utils
-import proxy
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +49,7 @@ class TestProxy(unittest.TestCase):
         if sets.SMTP_USE_SSL:
             server = smtplib.SMTP_SSL(sets.SMTP_SERVER,
                                       sets.SMTP_PORT)
+
         else:
             server = smtplib.SMTP(sets.SMTP_SERVER, sets.SMTP_PORT)
 
@@ -70,8 +70,10 @@ class TestProxy(unittest.TestCase):
 
         try:
             server.login(sets.IMAP_USER, sets.IMAP_PASSWORD)
-
-
+        except ConnectionRefusedError:
+            logging.error("Unable to log in to the IMAP server. "
+                          "Check your IMAP settings in configure.py.")
+            raise
 
 
 class TestServer(unittest.TestCase):
@@ -92,7 +94,6 @@ class TestServer(unittest.TestCase):
             logger.debug('done')
         finally:
             smtp_server.quit()
-
 
 
 if __name__ == '__main__':
