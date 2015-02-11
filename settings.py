@@ -1,5 +1,4 @@
 """
-
 ===========
 settings.py
 ===========
@@ -27,37 +26,21 @@ class BaseSettings:
     """Default settings container"""
     def __init__(self, ):
         self._configured = False
-
         # Convert class attributes to instance attributes
         for key, val in type(self).__dict__.items():
             if not key.startswith('_'):
                 self.__dict__[key] = val
 
-    def configure(self, prompt_for_blank=True, **kwargs):
-        # First, set the key-value pairs:
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-        # Now prompt the user for the empty strings
+    def prompt_for_blank(self):
+        """Prompt to fill in values for missing settings."""
         for key, value in self.__dict__.items():
-            if not value and isinstance(value, str) and prompt_for_blank:
+            if not value and isinstance(value, str):
                 prompt_string = ' '.join(key.lower().split('_')) + ': '
                 if 'pass' in key.lower():
                     setattr(self, key, getpass.getpass(prompt_string))
                 else:
                     setattr(self, key, input(prompt_string))
         self._configured = True
-
-    @property
-    def configured(self):
-        return self._configured
-
-    def __getattr__(self, item):
-        if not self.__dict__['_configured']:
-            raise AttributeError('Settings not configured. '
-                                 'Call {}.configure() before using.'.format(
-                                     self.__dict__['__name__']))
-        return self.__dict__[item]
 
 
 class DefaultProxySettings(BaseSettings):
