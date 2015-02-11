@@ -1,7 +1,9 @@
 import logging
+import smtplib
 
+import imaplib
 import socketserver
-import email_utils
+import getpass
 
 from server import Forwarder
 
@@ -9,6 +11,7 @@ __author__ = 'Michael B. McCoy'
 
 
 logger = logging.getLogger(__name__)
+
 
 class ProxyServerError(Exception):
     pass
@@ -18,12 +21,43 @@ class ParseError(ProxyServerError):
     pass
 
 
+class ProxyEmailer(smtplib.SMTP, imaplib.IMAP4):
+    """Just a copy of SMTP right now."""
+
+    def __init__(self,
+                 smtp_host='localhost', smtp_port=smtplib.SMTP_PORT,
+                 imap_host='localhost', imap_port=imaplib.IMAP4_PORT,
+                 imap_username=None, imap_password=None,
+                 ):
+
+        # Start SMTP server (no authentication)
+        self.smtp_host = smtp_host
+        self.smtp_port = smtp_port
+        self.smtp_server = smtplib.SMTP(smtp_host, smtp_port)
+
+        # Start IMAP server
+        self.imap_host = imap_host
+        self.imap_port = imap_port
+        self.imap_server = imaplib.IMAP4(imap_host, imap_port)
+
+        # Authenticate IMAP connection:
+        self.imap_username = imap_username or getpass.getuser()
+        self.imap_password = imap_password or getpass.getpass()
+        self.imap_server.login(self.imap_username, self.imap_password)
+
+    def forward(self, data):
+        """Forward the data and block until we get a response."""
+
+
+
 class TCPProxyHandler(socketserver.ThreadingMixIn,
-               socketserver.BaseRequestHandler):
-    """
-    """
+                      socketserver.BaseRequestHandler):
+
     chunk_size = 4096
-    emailer = email_utils.EmailConnection()
+
+    def __init__(self, host='localhost', port=1111, *args, **kwargs):
+        self.emailer = ProxyEmailer(host, port)
+        super().__init__(*args, **kwargs)
 
     def handle(self):
         logger.debug("%s connected", self.client_address[0])

@@ -1,3 +1,4 @@
+import getpass
 import sys
 import unittest
 import logging
@@ -7,6 +8,7 @@ import email.utils
 from email.mime.text import MIMEText
 
 import email_utils
+import settings
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,14 @@ class TestEmailUtilities(unittest.TestCase):
         self.assertEquals(unpacked, data)
 
 
+class TestSMTP(unittest.TestCase):
+
+    def test_smtp_ssl(self):
+        server = smtplib.SMTP_SSL('mail.mikebmccoy.net', port=465)
+        username = settings.SMTP_USER or input("SMTP username: ")
+        password = settings.SMTP_PASSWORD or getpass.getpass("SMTP password: ")
+        server.login(username, password)
+
 
 class TestServer(unittest.TestCase):
 
@@ -51,7 +61,7 @@ class TestServer(unittest.TestCase):
         smtp_server.set_debuglevel(True)  # show communication with the server
         logger.debug('done')
         try:
-            logger.debug('sendin')
+            logger.debug('sending')
             smtp_server.sendmail('author@example.com', ['recipient@example.com'], msg.as_string())
             logger.debug('done')
         finally:

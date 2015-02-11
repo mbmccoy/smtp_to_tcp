@@ -86,7 +86,7 @@ if __name__ == '__main__':
     port = 1111
     logger.debug('Starting server on %s:%d', host, port)
     server = TCPTunnelServer((host, port), None)
-    logger.debug('Server statrted.')
+    logger.debug('Server started.')
 
     logger.debug('Starting asyncore loop.')
     try:
