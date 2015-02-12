@@ -11,6 +11,7 @@ import smtplib
 import email.utils
 from email.mime.text import MIMEText
 
+from email.encoders import encode_base64
 from configure import proxy_settings as ps, RemoteSettings
 
 import email_utils
@@ -50,6 +51,16 @@ class TestEmailUtilities(unittest.TestCase):
         logger.debug(payload)
         unpacked = email_utils.unpack(payload)
         self.assertEqual(unpacked, self.request)
+
+    def test_linebreaks(self):
+        """Test base64_encode
+        and base64_decode"""
+
+        self.assertEqual(
+            email_utils.base64_decode(
+                email_utils.base64_encode(
+                    self.request)),
+            self.request)
 
 
 class TestProxy(unittest.TestCase):
@@ -125,12 +136,17 @@ class TestRemote(unittest.TestCase):
         logger.debug('logging in')
         smtp_server = smtplib.SMTP(self.settings.SMTP_HOST,
                                    self.settings.SMTP_PORT)
+        smtp_server.set_debuglevel(True)
         logger.debug('done')
         try:
             logger.debug('sending')
-            smtp_server.sendmail('author@example.com',
-                                 ['recipient@example.com'],
-                                 payload.as_string())
+            try:
+                smtp_server.sendmail('author@example.com',
+                                     ['recipient@example.com'],
+                                     payload.as_string())
+            except smtplib.SMTPDataError as err:
+                print(err.smtp_code, err.smtp_error)
+
             logger.debug('done')
         finally:
             smtp_server.quit()

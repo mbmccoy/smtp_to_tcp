@@ -1,3 +1,4 @@
+import base64
 import logging
 import mimetypes
 
@@ -17,8 +18,10 @@ logger = logging.getLogger(__name__)
 class EmailException(Exception):
     pass
 
+
 class FormatException(Exception):
     pass
+
 
 def hash_filename(data):
     """Convert data into a unique filename"""
@@ -77,6 +80,22 @@ def unpack(message):
         payload = part.get_payload(decode=True)
         logger.debug("Email payload: %s", payload)
     return payload
+
+
+def base64_encode(data):
+    """Break a bytestring into lines separated by CLRFs, with maximum
+    line length specified by `max_length`. Note that `max_length`
+    includes length of the carriage return characters."""
+
+    assert(isinstance(data, bytes))
+    return str(base64.encodebytes(data), 'ascii')
+
+
+def base64_decode(encoded):
+    """Inverse of `base64_encode`"""
+    b_encoded = encoded.encode('ascii', 'surrogateescape')
+    s = b''.join(b_encoded.splitlines())
+    return base64.b64decode(s, validate=True)
 
 
 class EmailConnection:

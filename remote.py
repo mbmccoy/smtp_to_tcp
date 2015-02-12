@@ -1,3 +1,4 @@
+import base64
 from io import BytesIO
 import asyncore
 import logging
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class RemoteServerException(Exception):
     pass
+
 
 class Forwarder:
     def __init__(self, raw_request):
@@ -95,9 +97,10 @@ class TCPTunnelServer(SMTPServer):
         except RemoteServerException:
             logger.error('Caught exception; no response possible.')
             return
-        logger.debug('Response:\n%s', response)
+        encoded_content = email_utils.base64_encode(response.content)
 
-
+        logger.debug('Response:\n%s\n\n', encoded_content)
+        return u'211\r\n' + encoded_content
 
 
 def run(**kwargs):
