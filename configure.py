@@ -77,8 +77,6 @@ class ProxySettings(BaseSettings):
 
     # You must use SSL for most commercial SMTP servers e.g gmail
     SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', ''))
-
-    # Use default ports for SSL or unencrypted
     SMTP_PORT = SMTP_USE_SSL and smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
 
     # IMAP settings (inherited from SMTP settings if not defined)
@@ -90,14 +88,28 @@ class ProxySettings(BaseSettings):
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
 
-class RemoteSettings(BaseSettings):
-    """Container for server settings"""
+class RemoteSettings(BaseSettings, ProxySettings):
+    """Container for server settings. Derives from ProxySettings, so you
+    only need to redefine those settings that are different"""
 
     LOGGING_LEVEL = logging.DEBUG
 
-    SMTP_USE_SSL = False  # TODO: Support SSL for the server?
-    SMTP_HOST = os.environ.get('SMTP_HOST', 'localhost')
-    SMTP_PORT = int(os.environ.get('SMTP_PORT', smtplib.SMTP_PORT))
+    # Set these to your usual outgoing SMTP settings.
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', '')  # smtp.gmail.com
+    SMTP_USER = os.environ.get('SMTP_USER', '')  # example@gmail.com
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # BaDPaSSwOrd
+
+    # You must use SSL for most commercial SMTP servers e.g gmail
+    SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', ''))
+    SMTP_PORT = SMTP_USE_SSL and smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
+
+    # IMAP settings (inherited from SMTP settings if not defined)
+    IMAP_SERVER = os.environ.get('IMAP_SERVER', SMTP_SERVER)
+    IMAP_USER = os.environ.get('IMAP_USER', SMTP_USER)
+    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', SMTP_PASSWORD)
+
+    IMAP_USE_SSL = bool(os.environ.get('IMAP_USE_SSL', ''))
+    IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
 
 

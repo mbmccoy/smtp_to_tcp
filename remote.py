@@ -76,31 +76,35 @@ def log_message(peer, mail_from, recipient_list, data,
     msg = '\n'
     msg += 'From: %s' % mail_from
     msg += 'To: %s' % recipient_list
-    msg += '---------- MESSAGE FOLLOWS ----------'
+    msg += '---------- MESSAGE ----------'
     for line in lines:
         # headers first
         if is_in_headers and not line:
             is_in_headers = False
             msg += 'X-Peer: %s:%d' % (peer[0], peer[1])
         logger.log(logging_level, line)
-    logger.log(logging_level, '------------ END MESSAGE ------------')
+    logger.log(logging_level, '------------ END ------------')
 
 
 class TCPTunnelServer(SMTPServer):
 
+    def __init__(self, *args, **kwargs):
+        self.email_link = email_utils.EmailConnection()
+        super().__init__(*args, **kwargs)
+
     def process_message(self, peer, mail_from, recipient_list, data):
         message = email_utils.unpack(email.message_from_string(data))
-        logger.debug('Received message:\n%s', message)
+        logger.debug('Received message:\n%s', message.decode())
         logger.debug('Forwarding...')
         try:
             response = Forwarder(message).forward()
         except RemoteServerException:
             logger.error('Caught exception; no response possible.')
-            return
-        encoded_content = email_utils.base64_encode(response.content)
+            return u'252 Cannot VRFY user, but will accept message and attempt delivery'
 
-        logger.debug('Response:\n%s\n\n', encoded_content)
-        return u'211\r\n' + encoded_content
+        # Great! We've got a response.
+
+        return u'250 OK'
 
 
 def run(**kwargs):
