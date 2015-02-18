@@ -116,7 +116,7 @@ class TestRemote(unittest.TestCase):
 
     def tearDown(self):
         """Shut down the remote server"""
-        # Shut down the remote server using a keyboard interrupt
+        # Shut down the remote server using a keyboard interrupt signal
         if self.remote_smtp_server.exitcode is None:
             logger.debug("Stopping remote server with SIGINT...")
             os.kill(self.remote_smtp_server.pid, signal.SIGINT)

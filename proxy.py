@@ -103,6 +103,6 @@ if __name__ == "__main__":
     try:
         tcp_server.serve_forever()
     except KeyboardInterrupt:
-        tcp_server.shutdown()
+        pass
     finally:
         tcp_server.shutdown()

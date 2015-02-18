@@ -1,4 +1,5 @@
 import base64
+import imaplib2
 from io import BytesIO
 import asyncore
 import logging
@@ -16,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 class RemoteServerException(Exception):
     pass
+
+
 
 
 class Forwarder:
@@ -112,6 +115,9 @@ def run(**kwargs):
 
     Key-value parameters are taken to be settings.
     """
+
+    # TODO Use IMAP IDLE connection to wait for email coming in
+    # Once the connection is broken, we check for email.
     rs.configure(**kwargs)
 
     logging.basicConfig(level=rs.LOGGING_LEVEL)
@@ -128,6 +134,33 @@ def run(**kwargs):
         logger.debug('Loop finished.')
         remote_server.close()
 
-
 if __name__ == '__main__':
-    sys.exit(run())
+
+    logging.basicConfig(level=rs.LOGGING_LEVEL)
+    logging.debug("Connecting to %s:%d", rs.IMAP_SERVER, rs.IMAP_PORT)
+
+    if rs.IMAP_USE_SSL:
+        imap = imaplib2.IMAP4_SSL(rs.IMAP_SERVER, rs.IMAP_PORT)
+    else:
+        imap = imaplib2.IMAP4(rs.IMAP_SERVER, rs.IMAP_PORT)
+
+    logging.debug("Connecting as user %s", rs.IMAP_USER)
+    imap.login(rs.IMAP_USER, rs.IMAP_PASSWORD)
+    logging.debug("Logged in.")
+
+    logging.debug("Calling IDLE")
+    imap.select('Inbox', readonly=True)
+    print(imap.idle(lambda x: None))
+    logging.debug("Done.")
+
+    logging.debug("Closing connection and logging out...")
+
+    sys.exit()
+
+    try:
+        run()
+    except KeyboardInterrupt:
+        pass
+    sys.exit()
+
+

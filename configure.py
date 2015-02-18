@@ -88,7 +88,7 @@ class ProxySettings(BaseSettings):
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
 
-class RemoteSettings(BaseSettings, ProxySettings):
+class RemoteSettings(ProxySettings):
     """Container for server settings. Derives from ProxySettings, so you
     only need to redefine those settings that are different"""
 
@@ -108,7 +108,7 @@ class RemoteSettings(BaseSettings, ProxySettings):
     IMAP_USER = os.environ.get('IMAP_USER', SMTP_USER)
     IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', SMTP_PASSWORD)
 
-    IMAP_USE_SSL = bool(os.environ.get('IMAP_USE_SSL', ''))
+    IMAP_USE_SSL = bool(os.environ.get('IMAP_USE_SSL', '1'))
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
 
