@@ -1,15 +1,21 @@
 import logging
 import smtplib
 
-import imaplib
+import imaplib2
 import socketserver
-import getpass
+
+import email
+
+import petname
+
+from configure import proxy_settings
+import email_utils
 from remote import Forwarder
 
 __author__ = 'Michael B. McCoy'
 
-
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(
+    'proxy' if __name__ == '__main__' else __name__)
 
 
 # Exceptions
@@ -25,42 +31,101 @@ class SMTPError(ProxyServerError):
     pass
 
 
-class ProxyEmailer(smtplib.SMTP, imaplib.IMAP4):
-    """Just a copy of SMTP right now."""
+class EmailConnection:
+    """Houses both an SMTP and IMAP connection for bidirectional packet
+    communication through email. This class takes care of sending and
+    receiving the responses from the email server, packaging up the
+    data to send, etc.
+    """
 
-    def __init__(self,
-                 smtp_host='localhost', smtp_port=smtplib.SMTP_PORT,
-                 imap_host='localhost', imap_port=imaplib.IMAP4_PORT,
-                 imap_username=None, imap_password=None,
-                 ):
+    def __init__(self, settings=proxy_settings):
 
-        # Start SMTP server (no authentication)
-        self.smtp_host = smtp_host
-        self.smtp_port = smtp_port
-        self.smtp_server = smtplib.SMTP(smtp_host, smtp_port)
+        self.from_email = settings.FROM_EMAIL
+        self.to_email = settings.TO_EMAIL
 
-        # Start IMAP server
-        self.imap_host = imap_host
-        self.imap_port = imap_port
-        self.imap_server = imaplib.IMAP4(imap_host, imap_port)
+        logger.debug("Starting SMTP server...")
+        if settings.SMTP_USE_SSL:
+            self.smtp = smtplib.SMTP_SSL(settings.SMTP_SERVER,
+                                         settings.SMTP_PORT)
+        else:
+            self.smtp = smtplib.SMTP(settings.SMTP_SERVER,
+                                     settings.SMTP_PORT)
 
-        # Authenticate IMAP connection:
-        self.imap_username = imap_username or getpass.getuser()
-        self.imap_password = imap_password or getpass.getpass()
-        self.imap_server.login(self.imap_username, self.imap_password)
+        # TODO(?): Handle non-auth SMTP. (Open relays are rare...)
+        self.smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+
+        logger.debug("Starting IMAP server...")
+        if settings.IMAP_USE_SSL:
+            self.imap = imaplib2.IMAP4_SSL(settings.IMAP_SERVER,
+                                                 settings.IMAP_PORT)
+        else:
+            self.imap = imaplib2.IMAP4(settings.IMAP_SERVER,
+                                             settings.IMAP_PORT)
+        self.imap.login(settings.IMAP_USER,
+                               settings.IMAP_PASSWORD)
+        self.imap.select("Inbox")  # TODO: Allow other inboxes
+
+        # TODO: Chekc if IDLE is allowed, and if not, revert to polling (ugh)
 
     def forward(self, data):
-        """Forward the data and block until we get a response."""
+        """Forward the data and block until we get a response"""
+
+        subject = petname.Generate(3, ' ')
+        package = email_utils.pack(self.from_email, [self.to_email],
+                                   subject, data)
+
+        logging.debug("Sending message: %s", package.as_string())
+        self.smtp.sendmail(self.from_email, [self.to_email], package.as_string())
+
+        return self._get_response(subject)
+
+    def _get_response(self, subject):
+        """Fetch the email response corresponding to a specific request
+
+        Algorithm overview:
+         1. Make an IMAP IDLE call.
+         2. When the idle breaks or timeouts, check if there is a
+         message with whose subject line contains the 'subject'
+         argument.
+         3. If not, go back to IDLE (step 1).
+         4. Otherwise, unpack the data from the message and return.
+        """
+
+        # TODO Timeout implementation
+        # TODO Implement something other than IDLE?
+        while True:
+            logger.debug("Waiting for IDLE to break....")
+            status, message = self.imap.idle(timeout=5)
+            logger.debug("IDLE broken: %s : %s", status, message)
+
+            # See if we've got the reply
+            status, search_results = self.imap.uid('search', None,
+                                                   "TEXT", subject)
+            logger.debug("Search results %s : %s", status, search_results)
+            if search_results[0]:
+                break
+        unique_ids = search_results[0].split()
+        if len(unique_ids) > 1:
+            logger.warn("Too many responses from search query SUBJECT %s", subject)
+
+        # Get the most recent message
+        status, raw_data = self.imap.uid("fetch", unique_ids[-1], '(RFC822)')
+        logger.debug("Response STATUS: %s\nDATA: %s", status, raw_data)
+        response_email = email.message_from_string(raw_data[0][1])
+
+        # TODO: Stop faking this:
+        raw_data = email_utils.unpack(response_email)
+        forwarder = Forwarder(raw_data)
+        forwarder.forward()
+        return forwarder.response
 
 
-
-class TCPProxyHandler(socketserver.ThreadingMixIn,
+class TCPProxyHandler(  # socketserver.ThreadingMixIn,
                       socketserver.BaseRequestHandler):
-
     chunk_size = 4096
 
-    def __init__(self, host='localhost', port=1111, *args, **kwargs):
-        self.emailer = ProxyEmailer(host, port)
+    def __init__(self, *args, **kwargs):
+        self.emailer = EmailConnection()
         super().__init__(*args, **kwargs)
 
     def handle(self):
@@ -74,18 +139,15 @@ class TCPProxyHandler(socketserver.ThreadingMixIn,
             except BlockingIOError:
                 break
         logger.debug("%s", data)
-
-        request = Forwarder(data)
-        request.forward()
-
-        logger.debug("Recieved response\n%s", request.response)
-        for chunk in request.response.iter_content(self.chunk_size):
+        response = self.emailer.forward(data)
+        logger.debug("Received response\n%s", response)
+        for chunk in response.iter_content(self.chunk_size):
             self.request.sendall(chunk)
 
 
 if __name__ == "__main__":
-    logger.basicConfig(level=logging.DEBUG)
-
+    logging.basicConfig(level=logging.DEBUG)
+    print(proxy_settings)
     HOST, PORT = "localhost", 9999
     logger.debug("Creating proxy server at {}:{}".format(HOST, PORT))
 
@@ -93,7 +155,7 @@ if __name__ == "__main__":
     tcp_server = socketserver.TCPServer((HOST, PORT), TCPProxyHandler)
     logger.debug("Server created.")
 
-    logger.debug("Placing server into nonblocking mode.")
+    logger.debug("Placing server into non-blocking mode.")
     tcp_server.socket.setblocking(False)
     logger.debug('Done.')
 

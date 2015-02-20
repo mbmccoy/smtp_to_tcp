@@ -33,15 +33,14 @@ def unhash_filename(filename):
     return int(filename.split('.')[0])
 
 
-def pack(mail_from, recipient_list, data):
+def pack(mail_from, recipient_list, subject, data):
     """"Pack TCP request data into an email"""
 
     # Base message
     package = MIMEMultipart()
-    package['Subject'] = 'TEST'
+    package['Subject'] = subject
     package['To'] = recipient_list[0]
     package['From'] = mail_from
-    package.preamble = 'TEST'
 
     # Create attachment
     attachment_type = 'application/octet-stream'
@@ -119,5 +118,3 @@ class EmailConnection:
     def send_email(self, message):
         self.smtp_server.sendmail(self.sender, self.recipients, message)
 
-    def __del__(self):
-        self.smtp_server.close()

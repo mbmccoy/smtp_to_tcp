@@ -1,4 +1,3 @@
-import base64
 import imaplib2
 from io import BytesIO
 import asyncore
@@ -12,13 +11,12 @@ import email_utils
 
 from configure import remote_settings as rs
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(
+    'remote' if __name__ == '__main__' else __name__)
 
 
 class RemoteServerException(Exception):
     pass
-
-
 
 
 class Forwarder:
@@ -91,10 +89,6 @@ def log_message(peer, mail_from, recipient_list, data,
 
 class TCPTunnelServer(SMTPServer):
 
-    def __init__(self, *args, **kwargs):
-        self.email_link = email_utils.EmailConnection()
-        super().__init__(*args, **kwargs)
-
     def process_message(self, peer, mail_from, recipient_list, data):
         message = email_utils.unpack(email.message_from_string(data))
         logger.debug('Received message:\n%s', message.decode())
@@ -121,7 +115,7 @@ def run(**kwargs):
     rs.configure(**kwargs)
 
     logging.basicConfig(level=rs.LOGGING_LEVEL)
-    host = rs.SMTP_HOST
+    host = rs.SMTP_SERVER
     port = rs.SMTP_PORT
 
     logger.debug('Starting server on %s:%d', host, port)
@@ -136,6 +130,7 @@ def run(**kwargs):
 
 if __name__ == '__main__':
 
+    print(rs)
     logging.basicConfig(level=rs.LOGGING_LEVEL)
     logging.debug("Connecting to %s:%d", rs.IMAP_SERVER, rs.IMAP_PORT)
 
@@ -150,7 +145,12 @@ if __name__ == '__main__':
 
     logging.debug("Calling IDLE")
     imap.select('Inbox', readonly=True)
-    print(imap.idle(lambda x: None))
+    print(imap.uid('search', None, 'SUBJECT', 'test'))
+    for i in range(10):
+        print('Idle')
+        print(imap.idle())
+        print('Broke.')
+
     logging.debug("Done.")
 
     logging.debug("Closing connection and logging out...")

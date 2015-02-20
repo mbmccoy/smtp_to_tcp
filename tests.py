@@ -47,6 +47,7 @@ class TestEmailUtilities(unittest.TestCase):
 
         payload = email_utils.pack('mccoy@localhost',
                                    ['smtp2tcp@localhost'],
+                                   'TestSubject',
                                    self.request)
         logger.debug(payload)
         unpacked = email_utils.unpack(payload)
@@ -102,7 +103,7 @@ class TestRemote(unittest.TestCase):
     def setUp(self):
         """Set up a local server on another process"""
         self.settings = RemoteSettings(
-            SMTP_HOST='localhost', SMTP_PORT=1111)
+            SMTP_SERVER='localhost', SMTP_PORT=1111)
 
         remote_smtp_server = multiprocessing.Process(
             target=remote.run, kwargs=self.settings.settings(),)
@@ -130,11 +131,13 @@ class TestRemote(unittest.TestCase):
 
     def test_server_connection(self):
         # Check that we can send email to the remote server
-        payload = email_utils.pack('server@example.com', ['author@localhost.com'],
-                               TestEmailUtilities.request)
+        payload = email_utils.pack('server@example.com',
+                                   ['author@localhost.com'],
+                                   'Test Subject',
+                                   TestEmailUtilities.request)
 
         logger.debug('logging in')
-        smtp_server = smtplib.SMTP(self.settings.SMTP_HOST,
+        smtp_server = smtplib.SMTP(self.settings.SMTP_SERVER,
                                    self.settings.SMTP_PORT)
         smtp_server.set_debuglevel(True)
         logger.debug('done')

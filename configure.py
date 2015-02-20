@@ -61,6 +61,17 @@ class BaseSettings:
             if not key.startswith('_')
         }
 
+    def __str__(self):
+        """Prints all uppercase names that don't have 'PASS' in them"""
+        def star_pass(name, value):
+            if 'pass' in name.lower():
+                return '********'
+            else:
+                return value
+        return '\n'.join(["{} = {}".format(name, star_pass(name, value))
+                          for name, value in self.__dict__.items()
+                          if name == name.upper()])
+
 
 class ProxySettings(BaseSettings):
     """Container for proxy settings"""
@@ -69,49 +80,28 @@ class ProxySettings(BaseSettings):
     LOGGING_LEVEL = logging.DEBUG
 
     # SMTP settings
-
     # Set these to your usual outgoing SMTP settings.
-    SMTP_SERVER = os.environ.get('SMTP_SERVER', '')  # smtp.gmail.com
-    SMTP_USER = os.environ.get('SMTP_USER', '')  # example@gmail.com
+    SMTP_SERVER = os.environ.get('SMTP_SERVER')  # smtp.gmail.com
+    SMTP_USER = os.environ.get('SMTP_USER')  # example@gmail.com
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # BaDPaSSwOrd
 
     # You must use SSL for most commercial SMTP servers e.g gmail
-    SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', ''))
+    SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', '1'))
     SMTP_PORT = SMTP_USE_SSL and smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
 
-    # IMAP settings (inherited from SMTP settings if not defined)
+    # IMAP settings
+    # Inherit from SMTP settings if not defined
     IMAP_SERVER = os.environ.get('IMAP_SERVER', SMTP_SERVER)
     IMAP_USER = os.environ.get('IMAP_USER', SMTP_USER)
-    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', SMTP_PASSWORD)
-
-    IMAP_USE_SSL = bool(os.environ.get('IMAP_USE_SSL', ''))
-    IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
-
-
-class RemoteSettings(ProxySettings):
-    """Container for server settings. Derives from ProxySettings, so you
-    only need to redefine those settings that are different"""
-
-    LOGGING_LEVEL = logging.DEBUG
-
-    # Set these to your usual outgoing SMTP settings.
-    SMTP_SERVER = os.environ.get('SMTP_SERVER', '')  # smtp.gmail.com
-    SMTP_USER = os.environ.get('SMTP_USER', '')  # example@gmail.com
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # BaDPaSSwOrd
-
-    # You must use SSL for most commercial SMTP servers e.g gmail
-    SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', ''))
-    SMTP_PORT = SMTP_USE_SSL and smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
-
-    # IMAP settings (inherited from SMTP settings if not defined)
-    IMAP_SERVER = os.environ.get('IMAP_SERVER', SMTP_SERVER)
-    IMAP_USER = os.environ.get('IMAP_USER', SMTP_USER)
-    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', SMTP_PASSWORD)
+    IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD', '')
 
     IMAP_USE_SSL = bool(os.environ.get('IMAP_USE_SSL', '1'))
     IMAP_PORT = IMAP_USE_SSL and imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
 
+    FROM_EMAIL = SMTP_USER
+    TO_EMAIL = os.environ.get('TO_EMAIL', SMTP_USER)
 
+RemoteSettings = ProxySettings
 
 proxy_settings = ProxySettings()
 remote_settings = RemoteSettings()
