@@ -37,9 +37,9 @@ class TestEmailUtilities(unittest.TestCase):
     def test_hash(self):
         """Check that the filename mangling scheme is consistent."""
         data = object()
-        filename = email_utils.hash_filename(data)
+        filename = email_utils.generate_filename(data)
         self.assertEqual(filename,
-                         email_utils.hash_filename(
+                         email_utils.generate_filename(
                              email_utils.unhash_filename(filename)))
 
     def test_packing(self):

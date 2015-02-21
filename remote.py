@@ -19,74 +19,6 @@ class RemoteServerException(Exception):
     pass
 
 
-class Forwarder:
-    def __init__(self, raw_request):
-        self.raw = raw_request
-        self.connection = self.response = None
-        self.close_connection = True
-
-        # Parse the raw request into constituents
-        csrf = b'\r\n'
-        request_lines = self.raw.split(csrf)
-        request = str(request_lines[0], 'iso-8859-1')
-        split = request.split()
-
-        if len(split) == 3:
-            self.method, self.path, self.version = request.split()
-        elif len(split) == 2:
-            self.method, self.path = request.split()
-        else:
-            # TODO: More refined error-checking?
-            logging.error('Bad request:\n%s', request)
-            raise RemoteServerException('Bad request')
-        headers = csrf.join(request_lines[1:])
-        self.headers = parse_headers(BytesIO(headers))
-
-    def forward(self):
-        """
-        Forward request to its destination. Returns a
-        requests.Response object
-        """
-        logger.debug("path = %s", self.path)
-        self.response = requests.request(
-            method=self.method.lower(),
-            url=self.path, headers=self.headers)
-        return self.response
-
-
-def log_message(peer, mail_from, recipient_list, data,
-                logging_level=logging.DEBUG):
-    """Log the email message.
-
-    :param peer: Peer host from the SMTP server.
-    :param mail_from: `From` email address
-    :param recipient_list: List of `To` email addresses.
-    :param data: Raw message data.
-    :param logging_level: Level to log. Default is `logging.DEBUG`.
-
-    :return: None
-    """
-
-    # Shortcut return
-    if not logger.isEnabledFor(logging_level):
-        return
-
-    is_in_headers = True
-    lines = data.split('\n')
-
-    msg = '\n'
-    msg += 'From: %s' % mail_from
-    msg += 'To: %s' % recipient_list
-    msg += '---------- MESSAGE ----------'
-    for line in lines:
-        # headers first
-        if is_in_headers and not line:
-            is_in_headers = False
-            msg += 'X-Peer: %s:%d' % (peer[0], peer[1])
-        logger.log(logging_level, line)
-    logger.log(logging_level, '------------ END ------------')
-
-
 class TCPTunnelServer(SMTPServer):
 
     def process_message(self, peer, mail_from, recipient_list, data):
@@ -94,14 +26,14 @@ class TCPTunnelServer(SMTPServer):
         logger.debug('Received message:\n%s', message.decode())
         logger.debug('Forwarding...')
         try:
-            response = Forwarder(message).forward()
+            response = email_utils.Forwarder(message).forward()
         except RemoteServerException:
             logger.error('Caught exception; no response possible.')
             return u'252 Cannot VRFY user, but will accept message and attempt delivery'
 
         # Great! We've got a response.
-
         return u'250 OK'
+
 
 
 def run(**kwargs):
@@ -113,13 +45,15 @@ def run(**kwargs):
     # TODO Use IMAP IDLE connection to wait for email coming in
     # Once the connection is broken, we check for email.
     rs.configure(**kwargs)
+    logger.setLevel(level=rs.LOGGING_LEVEL)
 
-    logging.basicConfig(level=rs.LOGGING_LEVEL)
-    host = rs.SMTP_SERVER
-    port = rs.SMTP_PORT
+    smtp_host = rs.SMTP_SERVER
+    smtp_port = rs.SMTP_PORT
+    imap_host = rs.IMAP_SERVER
+    imap_port = rs.IMAP_PORT
 
-    logger.debug('Starting server on %s:%d', host, port)
-    remote_server = TCPTunnelServer((host, port), None)
+    logger.debug('Starting server on %s:%d', smtp_host, smtp_port)
+    remote_server = TCPTunnelServer((smtp_host, smtp_port), None)
 
     logger.debug('Starting asyncore loop.')
     try:
