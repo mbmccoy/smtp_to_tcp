@@ -2,30 +2,17 @@ import logging
 import socketserver
 
 from configure import proxy_settings
-import email_utils
+import utils
 
 logger = logging.getLogger(
     'proxy' if __name__ == '__main__' else __name__)
-
-
-# Exceptions
-class ProxyServerError(Exception):
-    pass
-
-
-class ParseError(ProxyServerError):
-    pass
-
-
-class SMTPError(ProxyServerError):
-    pass
 
 
 # TODO: thread using socketserver.ThreadingMixIn
 class TCPProxyHandler(socketserver.BaseRequestHandler):
     chunk_size = 4096
 
-    email_connection = email_utils.EmailConnection(proxy_settings)
+    email_connection = utils.EmailConnection(proxy_settings)
 
     def handle(self):
         logger.debug("%s connected", self.client_address[0])
@@ -38,7 +25,15 @@ class TCPProxyHandler(socketserver.BaseRequestHandler):
             except BlockingIOError:
                 break
         logger.debug("%s", data)
-        response = self.email_connection.forward(data)
+
+        subject = self.email_connection.send(data)
+        response = self.email_connection.fetch(subject=subject)
+
+        # TODO: Stop faking this
+        raw_data = utils.unpack(response)
+        forwarder = utils.Forwarder(raw_data)
+        response = forwarder.forward()
+
         logger.debug("Received response\n%s", response)
         for chunk in response.iter_content(self.chunk_size):
             self.request.sendall(chunk)

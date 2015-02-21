@@ -81,9 +81,9 @@ class Settings(BaseSettings):
 
     # SMTP settings
     # Set these to your usual outgoing SMTP settings.
-    SMTP_SERVER = os.environ.get('SMTP_SERVER')  # smtp.gmail.com
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')  # smtp.gmail.com
     SMTP_USER = os.environ.get('SMTP_USER')  # example@gmail.com
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # BaDPaSSwOrd
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')  # BaDPaSSwOrd
 
     # You must use SSL for most commercial SMTP servers e.g gmail
     SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', '1'))
@@ -101,7 +101,5 @@ class Settings(BaseSettings):
     FROM_EMAIL = SMTP_USER
     TO_EMAIL = os.environ.get('TO_EMAIL', SMTP_USER)
 
-RemoteSettings = Settings
-
 proxy_settings = Settings()
-remote_settings = RemoteSettings()
+remote_settings = Settings()

@@ -119,8 +119,7 @@ class Forwarder:
         elif len(split) == 2:
             self.method, self.path = split
         else:
-            # TODO: More refined error-checking?
-            logging.error('Bad request:\n%s', request)
+            raise ValueError('Bad request: %s' % request)
         headers = csrf.join(request_lines[1:])
         self.headers = parse_headers(BytesIO(headers))
 
@@ -143,7 +142,7 @@ class EmailConnection:
     data to send, etc.
     """
 
-    def __init__(self, settings=proxy_settings):
+    def __init__(self, settings):
 
         self.from_email = settings.FROM_EMAIL
         self.to_email = settings.TO_EMAIL
@@ -172,20 +171,19 @@ class EmailConnection:
 
         # TODO: Chekc if IDLE is allowed, and if not, revert to polling
 
-    def forward(self, data):
-        """Forward the data and block until we get a response"""
+    def send(self, data):
+        """Forward the data"""
 
         subject = petname.Generate(3, ' ')
         package = pack(self.from_email, [self.to_email],
                        subject, data)
 
         logging.debug("Sending message: %s", package.as_string())
-        self.smtp.sendmail(self.from_email, [self.to_email],
-                           package.as_string())
+        self.smtp.sendmail(
+            self.from_email, [self.to_email], package.as_string())
+        return subject
 
-        return self._get_response(subject)
-
-    def _get_response(self, subject=None, email_from=None):
+    def fetch(self, subject=None, email_from=None):
         """Fetch the email response corresponding to a specific request
 
         Algorithm overview:
@@ -207,15 +205,12 @@ class EmailConnection:
 
         # TODO Timeout implementation
         # TODO Implement something other than IDLE?
-
+        search_results = ['']
         while True:
-            logger.debug("Waiting for IDLE to break....")
             status, message = self.imap.idle(timeout=5)
             logger.debug("IDLE broken: %s : %s", status, message)
-
-            # See if we've got the reply
-            status, search_results = self.imap.uid('search', None,
-                                                   *search_args)
+            status, search_results = \
+                self.imap.uid('search', None, *search_args)
             logger.debug("Search results %s : %s", status, search_results)
             if search_results[0]:
                 break
@@ -229,8 +224,4 @@ class EmailConnection:
         logger.debug("Response STATUS: %s\nDATA: %s", status, raw_data)
         response_email = email.message_from_string(raw_data[0][1])
 
-        # TODO: Stop faking this:
-        raw_data = unpack(response_email)
-        forwarder = Forwarder(raw_data)
-        forwarder.forward()
-        return forwarder.response
+        return response_email
