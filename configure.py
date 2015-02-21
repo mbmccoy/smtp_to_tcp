@@ -73,7 +73,7 @@ class BaseSettings:
                           if name == name.upper()])
 
 
-class ProxySettings(BaseSettings):
+class Settings(BaseSettings):
     """Container for proxy settings"""
 
     # Example settings follow in comments.
@@ -101,7 +101,7 @@ class ProxySettings(BaseSettings):
     FROM_EMAIL = SMTP_USER
     TO_EMAIL = os.environ.get('TO_EMAIL', SMTP_USER)
 
-RemoteSettings = ProxySettings
+RemoteSettings = Settings
 
-proxy_settings = ProxySettings()
+proxy_settings = Settings()
 remote_settings = RemoteSettings()

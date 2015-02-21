@@ -30,7 +30,7 @@ class FormatException(Exception):
     pass
 
 
-def generate_filename(data):
+def generate_filename():
     """Convert data into a unique filename"""
     name = petname.Generate(3, '-')
     return name + '.pkt'
@@ -54,7 +54,7 @@ def pack(mail_from, recipient_list, subject, data):
     # Add to base message
     email.encoders.encode_base64(attachment)
     attachment.add_header('Content-Disposition', 'attachment',
-                          filename=generate_filename(data))
+                          filename=generate_filename())
     package.attach(attachment)
 
     return package
