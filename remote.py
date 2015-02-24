@@ -15,7 +15,7 @@ def run(settings):
 
     while True:
         email_candidate = \
-            email_connection.fetch(subject=utils.MAIL_PREFIX)
+            email_connection.fetch(subject=settings.MAIL_PREFIX)
         raw_data = utils.unpack(email_candidate)
         if not raw_data:
             logger.debug("No data unpacked...")

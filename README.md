@@ -6,29 +6,13 @@ to be done.
 
 You've woken up and found yourself in the middle of a desert with only 
 one tool: a satellite phone with access to a single email account. You 
-really, really want to check reddit. It's time for `smtp_to_tcp`.
- 
-## Status
+really, really want to check hacker news. It's time for `smtp_to_tcp`.
 
-*Core services not yet functional*
+### TODO
 
- - `proxy.py`
-  
-   + The core proxy functionality works, but it still 
-   frequently results in hung requests. Nevertheless, I've used it
-   to browse [reddit](http:/www.reddit.com), so it's not that bad. 
- 
-  
- - `remote.py` *TODO*
-
-### Known limitations
-
- - The proxy server does not support secure connections.
- 
- - The remote server does not support secure connections.
+ - Support HTTPS
    
- - The current proxy often hangs on requests, making a necessarily 
- slow and gnarly connection even slower and less reliable. 
+ - Multi-thread requests
 
 # Architecture
 

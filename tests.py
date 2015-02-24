@@ -4,15 +4,13 @@ import unittest
 import logging
 
 import smtplib
-from configure import proxy_settings as ps
-
 import utils
 
 logger = logging.getLogger(__name__)
 
 
 class TestEmailUtilities(unittest.TestCase):
-    """Tests for encoding and decoding filenames assocated with data"""
+    """Tests for encoding and decoding file names associated with data"""
 
     request = b'GET http://www.google.com/favicon.ico HTTP/1.1\r\n' \
               b'Host: www.google.com\r\n' \
@@ -56,6 +54,7 @@ class TestProxy(unittest.TestCase):
         environment variables that define the proxy settings.
 
         """
+        ps = utils.proxy_settings
         if ps.SMTP_USE_SSL:
             server = smtplib.SMTP_SSL(ps.SMTP_SERVER,
                                       ps.SMTP_PORT)
@@ -70,6 +69,7 @@ class TestProxy(unittest.TestCase):
         If you get an error here, you probably need to check the
         environment variables that define the remote server settings.
         """
+        ps = utils.proxy_settings
         if ps.IMAP_USE_SSL:
             server = imaplib.IMAP4_SSL(ps.IMAP_SERVER, ps.IMAP_PORT)
         else:

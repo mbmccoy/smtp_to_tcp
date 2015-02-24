@@ -19,7 +19,6 @@ import imaplib2
 import requests
 
 
-
 logger = logging.getLogger(__name__)
 
 

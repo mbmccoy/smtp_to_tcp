@@ -8,7 +8,6 @@ logger = logging.getLogger(
     'proxy' if __name__ == '__main__' else __name__)
 
 
-# TODO: thread using socketserver.ThreadingMixIn
 class TCPProxyHandler(socketserver.BaseRequestHandler):
     chunk_size = 4096
 
@@ -16,8 +15,6 @@ class TCPProxyHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         logger.debug("%s connected", self.client_address[0])
-
-        # Collect the full request
         data = b''
         while True:
             try:
