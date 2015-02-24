@@ -8,14 +8,31 @@ You've woken up and found yourself in the middle of a desert with only
 one tool: a satellite phone with access to a single email account. You 
 really, really want to check hacker news. It's time for `smtp_to_tcp`.
 
-# Installation and setup
+## Basic requirements
+
+This package requires two computers, the `local` and the `remote`. 
+
+  - The `local` machine is the one that you want to use to browse
+   the internet using only an email connection. 
+  
+  - The `remote` machine reads emails from the local machine, and 
+   fetches the requested data from the internet, and it sends replies 
+   to the local machine.
+
+TODO: Picture illustrating this setup
+
+You'll first need to install `python3` is installed on both machines. Then
+you'll need install the packages listed in `requirements.txt`. With `pip`,
+the process is painless:
+    
+     >>> pip3 install -r requirements.txt
 
 
 
-## Requirements
+### Requirements 
 
-**Notice** This code was written for and tested with `python3`. Your 
-`python2` mileage may vary. 
+
+
 
  
 
