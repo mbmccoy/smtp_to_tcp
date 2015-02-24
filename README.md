@@ -31,7 +31,7 @@ terminals, one for the `local` machine and one for the `remote` machine.
 latency of the connection somewhat.  This works well for Google's 
 Gmail, but some email providers do not support this convenient 
 protocol (*cough* Yahoo! *cough*). Use your [google fu] [google-fu] 
-to check that your email supports push.
+to check that your email supports IDLE push.
  
 [google-fu]: http://www.urbandictionary.com/define.php?term=google-fu
 
@@ -39,7 +39,7 @@ to check that your email supports push.
 
 *Given the chance, this code will kill you and everyone you care 
 about.* Make sure to test all of these settings before you embark on a
-journey into the desert. 
+journey into the desert.
 
 To start, first install `python3`  on both the `local` and `remote` 
 machines. The code was tested with python 3.4, and your mileage may 
@@ -73,13 +73,24 @@ the `email-to` address matches the email account that the `remote`
 machine is monitoring. 
 
 Once you see the success message, it's time to tell your browser to 
-use this special proxy server to access the internet.  **The easiest 
-way to do this involves using firefox.**  Other
+use this special proxy server to access the internet.  **The following
+instructions apply to Firefox on a Mac.**
+   
+  1. Install Firefox.
+  2. Go to Preferences -> Advanced -> Network and click on `Settings...`
+  3. Click on `Manual proxy configuration:` and (assuming you are using 
+  the default proxy settings) set the HTTP Proxy to `127.0.0.1` and Port to
+  `9999`. Leave the other boxes blank.
+  4. Click `OK`.
+  
+If everything works, you should be able to access the internet. Try 
+[hacker news](http://news.ycombinator.com) or [reddit](http://www.reddit.com). 
 
-Assumming that you chose the 
-default settings above, you need to set the address 
+# Questions?
+ 
+ 
 
-### TODO
+# TODO
 
  - Support HTTPS
  
@@ -87,38 +98,6 @@ default settings above, you need to set the address
    
  - Multi-thread requests
  
- - Write meaningful tests 
-
-# Architecture
-
-SMTP-to-TCP requires two pieces of software in order for you to access
-the internet through an SMTP server and IMAP mailbox that you have 
-access to. The code involves a local proxy server (`proxy.py`) and a
-remote custom SMTP server (`remote.py`).
-
-## The protocol
-
-The `proxy.py` module provieds a bare-bones HTTP proxy server that 
-runs on your local machine. By default, it opens a proxy server on 
-`localhost:1111`. When you make a TCP request through this port,
-your request is repackaged into an email and sent through your SMTP
-server to the mailbox for a domain which is running the `remote.py` 
-SMTP server script.
-
-When this email is delivered to `remote.py`, the server unpacks the 
-packet and sends it out to the internet for a response. The server
-packages this response in another email to the `REPLY-TO` address 
-from the original message, keeping the unique string from the subject
-line intact.
-
-Now, the subject line of the email includes a unique identifying
-string. On the other end, the proxy server has been querying your
-IMAP inbox for a response.  When it gets a hit, it unpacks the 
-message attachment, and sends it back to your browser as a response
-to the original request. 
-
-Yes, it's ridiculous. 
-
-# Setup
-
-*TODO*
+ - Write meaningful tests
+ 
+ 
