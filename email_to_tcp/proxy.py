@@ -2,7 +2,8 @@ import logging
 import socketserver
 from io import BytesIO
 
-import utils
+from email_to_tcp import utils
+
 
 logger = logging.getLogger(
     'proxy' if __name__ == '__main__' else __name__)

@@ -263,7 +263,7 @@ class EmailConnection:
         """Forward the data"""
 
         subject = subject if subject else \
-            MAIL_PREFIX + ' ' + petname.Generate(3, ' ')
+            Settings.MAIL_PREFIX + ' ' + petname.Generate(3, ' ')
 
         package = pack(self.from_email, [self.to_email],
                        subject, data)

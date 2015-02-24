@@ -1,10 +1,11 @@
 import logging
 from http.client import HTTPException, LineTooLong
-
-from requests.exceptions import RequestException
 import sys
 
-import utils
+from requests.exceptions import RequestException
+
+from email_to_tcp import utils
+
 
 logger = logging.getLogger(
     'remote' if __name__ == '__main__' else __name__)

@@ -2,9 +2,10 @@ import imaplib
 import sys
 import unittest
 import logging
-
 import smtplib
-import utils
+
+from email_to_tcp import utils
+
 
 logger = logging.getLogger(__name__)
 
