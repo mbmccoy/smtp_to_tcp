@@ -1,4 +1,7 @@
+from getpass import getpass
+import imaplib
 import logging
+import smtplib
 import socketserver
 from io import BytesIO
 
@@ -8,13 +11,20 @@ from email_to_tcp import utils
 logger = logging.getLogger(
     'proxy' if __name__ == '__main__' else __name__)
 
+settings = utils.proxy_settings
+
 
 class TCPProxyHandler(socketserver.BaseRequestHandler):
     chunk_size = 4096
-
-    email_connection = utils.EmailConnection(utils.proxy_settings)
+    email_connection = None  # Lazy evaluation necessary here
 
     def handle(self):
+        """Handle the request"""
+        if TCPProxyHandler.email_connection is None:
+            raise AttributeError(
+                "You must call TCPProxyHandler.connect(settings) "
+                "before starting the server.")
+
         logger.debug("%s connected", self.client_address[0])
         data = b''
         while True:
@@ -35,11 +45,66 @@ class TCPProxyHandler(socketserver.BaseRequestHandler):
                 break
             self.request.sendall(chunk)
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    @classmethod
+    def connect(cls, s):
+        cls.email_connection = utils.EmailConnection(s)
 
-    HOST, PORT = "localhost", 9999
-    logger.debug("Creating proxy server at {}:{}".format(HOST, PORT))
+
+def configure(s=utils.proxy_settings):
+    if not s.SMTP_SERVER:
+        s.SMTP_SERVER = input("Enter the SMTP server that you have local "
+                              "access to (ex: smtp.gmail.com): \n")
+    if not s.SMTP_USER:
+        s.SMTP_USER = input("Your SMTP username (ex: example@gmail.com):\n")
+        s.SMTP_USE_SSL = bool(input("Use SSL? [Y/n]").lower() != 'n')
+        default_port = s.SMTP_USE_SSL and \
+                       smtplib.SMTP_SSL_PORT or smtplib.SMTP_PORT
+        s.SMTP_PORT = int(input("Port (default %d): " % default_port)
+                          or default_port)
+
+    if not s.SMTP_PASSWORD:
+        s.SMTP_PASSWORD = getpass("SMTP password: ")
+
+    if not s.IMAP_SERVER:
+        s.IMAP_SERVER = input("Enter the IMAP server that you have "
+                              "local access to (ex: imap.gmail.com): \n")
+
+    if not s.IMAP_USER:
+        s.IMAP_USER = input("Your IMAP username (default %s): \n"
+                            % s.SMTP_USER) or s.SMTP_USER
+        s.IMAP_USE_SSL = bool(input("Use SSL? [Y/n]").lower() != 'n')
+        default_port = s.IMAP_USE_SSL and \
+                       imaplib.IMAP4_SSL_PORT or imaplib.IMAP4_PORT
+        s.IMAP_PORT = int(input("Port (default %d): " % default_port)
+                          or default_port)
+
+    if not s.IMAP_PASSWORD:
+        s.IMAP_PASSWORD = getpass("IMAP password: ")
+
+    s.FROM_EMAIL = s.SMTP_USER
+
+    if not s.TO_EMAIL:
+        s.TO_EMAIL = input("Enter the email address that the remote "
+                           "server is monitoring: \n")
+
+    s.HOST = '127.0.0.1'
+    s.PORT = 9999
+
+    return s
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
+    settings = configure(settings)
+    print("======================================")
+    print("Settings: \n{}".format(settings))
+    print("======================================")
+
+    HOST, PORT = settings.HOST, settings.PORT
+    logger.info("Creating proxy server at {}:{}".format(HOST, PORT))
+
+    TCPProxyHandler.connect(settings)
 
     # Create the server, binding to localhost on port 9999
     tcp_server = socketserver.TCPServer((HOST, PORT), TCPProxyHandler)
@@ -47,11 +112,8 @@ if __name__ == "__main__":
 
     logger.debug("Placing server into non-blocking mode.")
     tcp_server.socket.setblocking(False)
-    logger.debug('Done.')
 
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
-    logger.debug("Starting server.")
+    logger.info("Starting server... (stop with Ctrl-C)")
     try:
         tcp_server.serve_forever()
     except KeyboardInterrupt:

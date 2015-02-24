@@ -6,15 +6,15 @@ to be done.
 
 You've woken up and found yourself in the middle of a desert with only 
 one tool: a satellite phone with access to a single email account. You 
-really, really want to check (reddit)[http://www.reddit.com]. It's time
+really, really want to check [reddit](http://www.reddit.com). It's time
 for `smtp_to_tcp`.
 
 # Set up
 
-**WARNING**
+**WARNING:** *If you give it the chance, this code will kill you and 
+everyone you care about.* 
 
-*Given the chance, this code will kill you and everyone you care 
-about.* Make sure to thoroughly test all of these settings before you 
+Make sure to thoroughly test all of these settings before you 
 embark on a journey into the desert, and note that the code is not
 designed for high-reliability needs. You've been warned.
 
@@ -56,13 +56,13 @@ vary with different versions.
 You'll also want to install the packages listed in `requirements.txt`. 
 The `pip` package manager makes the process painless:
     
-     >>> pip3 install -r requirements.txt
+     >> pip3 install -r requirements.txt
 
 ## Setting up your `remote` machine
 
 To start the server on the `remote` machine, run the following code
 
-    >>> python3 -m email_to_tcp --remote 
+    >> python3 -m email_to_tcp.remote 
 
 You will be prompted with a series of questions about your email 
 username and password. If you see a success message, you are good to 
@@ -74,7 +74,7 @@ internet.
 This service requires a bit more work. First, we start the local proxy 
 server:
 
-    >>> python3 -m email_to_tcp --local
+    >> python3 -m email_to_tcp.local
     
 You'll again be prompted with a series of questions. Make sure that 
 the `email-to` address matches the email account that the `remote` 
@@ -86,14 +86,15 @@ instructions apply to Firefox on a Mac.**
    
   1. Install Firefox.
   2. Go to Preferences -> Advanced -> Network and click on `Settings...`
-  3. Click on `Manual proxy configuration:` and (assuming you are using 
-  the default proxy settings) set the HTTP Proxy to `127.0.0.1` and Port to
-  `9999`. Leave the other boxes blank.
+  3. Click the radio button `Manual proxy configuration:` and set the 
+  HTTP Proxy to `127.0.0.1` and Port to `9999`. Leave the other boxes blank.
   4. Click `OK`.
   
 If everything works, you should be able to access the internet. Try 
 [hacker news](http://news.ycombinator.com) or 
 [reddit](http://www.reddit.com). 
+
+**NOTE** Secure HTTPS connections will not be tunneled through your email.
 
 # Questions?
  

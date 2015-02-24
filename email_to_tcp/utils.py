@@ -39,7 +39,7 @@ class Settings:
     # Set these to your usual outgoing SMTP settings.
     SMTP_SERVER = os.environ.get('SMTP_SERVER', '')  # smtp.gmail.com
     SMTP_USER = os.environ.get('SMTP_USER', '')  # example@gmail.com
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')  # BaDPaSSwOrd
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')  # BaDPaSSwOrd
 
     # You must use SSL for most commercial SMTP servers e.g gmail
     SMTP_USE_SSL = bool(os.environ.get('SMTP_USE_SSL', '1'))
@@ -230,31 +230,31 @@ class EmailConnection:
     data to send, etc.
     """
 
-    def __init__(self, settings):
+    def __init__(self, s):
 
-        self.from_email = settings.FROM_EMAIL
-        self.to_email = settings.TO_EMAIL
+        self.from_email = s.FROM_EMAIL
+        self.to_email = s.TO_EMAIL
 
         logger.debug("Starting SMTP server...")
-        if settings.SMTP_USE_SSL:
-            self.smtp = smtplib.SMTP_SSL(settings.SMTP_SERVER,
-                                         settings.SMTP_PORT)
+        if s.SMTP_USE_SSL:
+            self.smtp = smtplib.SMTP_SSL(s.SMTP_SERVER,
+                                         s.SMTP_PORT)
         else:
-            self.smtp = smtplib.SMTP(settings.SMTP_SERVER,
-                                     settings.SMTP_PORT)
+            self.smtp = smtplib.SMTP(s.SMTP_SERVER,
+                                     s.SMTP_PORT)
 
         # TODO(?): Handle non-auth SMTP. (Open relays are rare...)
-        self.smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        self.smtp.login(s.SMTP_USER, s.SMTP_PASSWORD)
 
         logger.debug("Starting IMAP server...")
-        if settings.IMAP_USE_SSL:
-            self.imap = imaplib2.IMAP4_SSL(settings.IMAP_SERVER,
-                                           settings.IMAP_PORT)
+        if s.IMAP_USE_SSL:
+            self.imap = imaplib2.IMAP4_SSL(s.IMAP_SERVER,
+                                           s.IMAP_PORT)
         else:
-            self.imap = imaplib2.IMAP4(settings.IMAP_SERVER,
-                                       settings.IMAP_PORT)
-        self.imap.login(settings.IMAP_USER,
-                        settings.IMAP_PASSWORD)
+            self.imap = imaplib2.IMAP4(s.IMAP_SERVER,
+                                       s.IMAP_PORT)
+        self.imap.login(s.IMAP_USER,
+                        s.IMAP_PASSWORD)
         self.imap.select("Inbox")  # TODO: Allow other inboxes
 
         # TODO: Chekc if IDLE is allowed, and if not, revert to polling
