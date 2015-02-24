@@ -1,22 +1,12 @@
 import imaplib
-import os
 import sys
 import unittest
 import logging
-import signal
-
-import multiprocessing
 
 import smtplib
-import email.utils
-from email.mime.text import MIMEText
+from configure import proxy_settings as ps
 
-from email.encoders import encode_base64
-from configure import proxy_settings as ps, RemoteSettings
-
-import email_utils
-import proxy
-import remote
+import utils
 
 logger = logging.getLogger(__name__)
 
@@ -34,23 +24,15 @@ class TestEmailUtilities(unittest.TestCase):
               b'Cookie: _ga=; JobsSrc=; OGPC=5061451-1:5061416-1:\r\n' \
               b'Connection: keep-alive\r\n\r\n'
 
-    def test_hash(self):
-        """Check that the filename mangling scheme is consistent."""
-        data = object()
-        filename = email_utils.generate_filename(data)
-        self.assertEqual(filename,
-                         email_utils.generate_filename(
-                             email_utils.unhash_filename(filename)))
-
     def test_packing(self):
         """Test email message packing/unpacking."""
 
-        payload = email_utils.pack('mccoy@localhost',
-                                   ['smtp2tcp@localhost'],
-                                   'TestSubject',
-                                   self.request)
+        payload = utils.pack('mccoy@localhost',
+                             ['smtp2tcp@localhost'],
+                             'TestSubject',
+                             self.request)
         logger.debug(payload)
-        unpacked = email_utils.unpack(payload)
+        unpacked = utils.unpack(payload)
         self.assertEqual(unpacked, self.request)
 
     def test_linebreaks(self):
@@ -58,8 +40,8 @@ class TestEmailUtilities(unittest.TestCase):
         and base64_decode"""
 
         self.assertEqual(
-            email_utils.base64_decode(
-                email_utils.base64_encode(
+            utils.base64_decode(
+                utils.base64_encode(
                     self.request)),
             self.request)
 
@@ -96,63 +78,6 @@ class TestProxy(unittest.TestCase):
         server.login(ps.IMAP_USER, ps.IMAP_PASSWORD)
         server.select()
         server.close()
-
-
-class TestRemote(unittest.TestCase):
-
-    def setUp(self):
-        """Set up a local server on another process"""
-        self.settings = RemoteSettings(
-            SMTP_SERVER='localhost', SMTP_PORT=1111)
-
-        remote_smtp_server = multiprocessing.Process(
-            target=remote.run, kwargs=self.settings.settings(),)
-        remote_smtp_server.daemon = True
-
-        logging.debug("Spinning up remote SMTP server emulator...")
-        remote_smtp_server.start()
-        remote_smtp_server.join(0.25)  # Pause to spin up
-        logging.debug("Done.")
-        self.remote_smtp_server = remote_smtp_server
-
-    def tearDown(self):
-        """Shut down the remote server"""
-        # Shut down the remote server using a keyboard interrupt signal
-        if self.remote_smtp_server.exitcode is None:
-            logger.debug("Stopping remote server with SIGINT...")
-            os.kill(self.remote_smtp_server.pid, signal.SIGINT)
-            self.remote_smtp_server.join(0.5)
-        if self.remote_smtp_server.exitcode is None:
-            logger.error("Remote server is not responding. "
-                         "pid: {}".format(self.remote_smtp_server.pid))
-        else:
-            logger.debug("Remote server successfully killed "
-                         "(ignore the the traceback)")
-
-    def test_server_connection(self):
-        # Check that we can send email to the remote server
-        payload = email_utils.pack('server@example.com',
-                                   ['author@localhost.com'],
-                                   'Test Subject',
-                                   TestEmailUtilities.request)
-
-        logger.debug('logging in')
-        smtp_server = smtplib.SMTP(self.settings.SMTP_SERVER,
-                                   self.settings.SMTP_PORT)
-        smtp_server.set_debuglevel(True)
-        logger.debug('done')
-        try:
-            logger.debug('sending')
-            try:
-                smtp_server.sendmail('author@example.com',
-                                     ['recipient@example.com'],
-                                     payload.as_string())
-            except smtplib.SMTPDataError as err:
-                print(err.smtp_code, err.smtp_error)
-
-            logger.debug('done')
-        finally:
-            smtp_server.quit()
 
 
 if __name__ == '__main__':
