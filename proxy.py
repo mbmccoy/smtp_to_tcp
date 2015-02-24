@@ -1,5 +1,6 @@
 import logging
 import socketserver
+from io import BytesIO
 
 from configure import proxy_settings
 import utils
@@ -25,19 +26,17 @@ class TCPProxyHandler(socketserver.BaseRequestHandler):
             except BlockingIOError:
                 break
         logger.debug("%s", data)
-
         subject = self.email_connection.send(data)
-        response = self.email_connection.fetch(subject=subject)
 
-        # TODO: Stop faking this
-        raw_data = utils.unpack(response)
-        forwarder = utils.Forwarder(raw_data)
-        response = forwarder.forward()
-
+        response = self.email_connection.fetch(subject='Re: ' + subject)
         logger.debug("Received response\n%s", response)
-        for chunk in response.iter_content(self.chunk_size):
-            self.request.sendall(chunk)
+        raw_data = BytesIO(utils.unpack(response))
 
+        while True:
+            chunk = raw_data.read(self.chunk_size)
+            if not chunk:
+                break
+            self.request.sendall(chunk)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

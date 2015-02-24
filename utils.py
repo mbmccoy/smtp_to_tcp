@@ -16,10 +16,9 @@ import requests
 
 from configure import proxy_settings
 
-
-__author__ = '__mccoy__'
-
 logger = logging.getLogger(__name__)
+
+MAIL_PREFIX = '[MailTunnel]'
 
 
 class EmailException(Exception):
@@ -79,7 +78,7 @@ def unpack(message):
             continue
         filename = part.get_filename()
         if not filename:
-            logger.error("", filename)
+            logger.debug("No filename")
             continue
         payload = part.get_payload(decode=True)
         logger.debug("Email payload: %s", payload)
@@ -171,10 +170,12 @@ class EmailConnection:
 
         # TODO: Chekc if IDLE is allowed, and if not, revert to polling
 
-    def send(self, data):
+    def send(self, data, subject=None):
         """Forward the data"""
 
-        subject = petname.Generate(3, ' ')
+        subject = subject if subject else \
+            MAIL_PREFIX + ' ' + petname.Generate(3, ' ')
+
         package = pack(self.from_email, [self.to_email],
                        subject, data)
 
@@ -182,6 +183,22 @@ class EmailConnection:
         self.smtp.sendmail(
             self.from_email, [self.to_email], package.as_string())
         return subject
+
+    def reply(self, data, initial_email):
+        """Reply to an email with new data.
+        :param data:
+        :param initial_email:  Message object with the email we are replying to
+        :return: the email package that was sent
+        """
+        subject = 'Re: ' + initial_email['subject']
+        to_email = initial_email['from']
+        from_email = initial_email['to']
+
+        package = pack(from_email, [to_email], subject, data)
+        logging.debug("Replying with message: %s", package.as_string())
+        self.smtp.sendmail(from_email, [to_email], package.as_string())
+        return package
+
 
     def fetch(self, subject=None, email_from=None):
         """Fetch the email response corresponding to a specific request
@@ -199,15 +216,16 @@ class EmailConnection:
             raise ValueError("At least one of `subject` or "
                              "`email_from` must be defined.")
 
-        search_args = []
+        search_args = ["(UNSEEN)"]
         search_args += ["SUBJECT", subject] if subject else []
         search_args += ["FROM", email_from] if email_from else []
 
         # TODO Timeout implementation
         # TODO Implement something other than IDLE?
         search_results = ['']
+        logger.debug('IDLE loop started...')
         while True:
-            status, message = self.imap.idle(timeout=5)
+            status, message = self.imap.idle(timeout=90)
             logger.debug("IDLE broken: %s : %s", status, message)
             status, search_results = \
                 self.imap.uid('search', None, *search_args)

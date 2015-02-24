@@ -1,8 +1,8 @@
-import asyncore
 import logging
-from smtpd import SMTPServer
-from http.client import parse_headers, email
+from http.client import HTTPException, LineTooLong
+import requests
 
+from requests.exceptions import RequestException
 
 from configure import remote_settings
 import utils
@@ -10,28 +10,33 @@ import utils
 logger = logging.getLogger(
     'remote' if __name__ == '__main__' else __name__)
 
-
-
 if __name__ == '__main__':
-    logger.setLevel(remote_settings.LOGGING_LEVEL)
+    logging.basicConfig(level=remote_settings.LOGGING_LEVEL)
     email_connection = utils.EmailConnection(settings=remote_settings)
 
     while True:
         email_candidate = \
-            email_connection.fetch(email_from=remote_settings.FROM_EMAIL)
-
+            email_connection.fetch(subject=utils.MAIL_PREFIX)
         raw_data = utils.unpack(email_candidate)
+
+        if not raw_data:
+            logger.debug("No data unpacked...")
+            continue
+
         try:
             forwarder = utils.Forwarder(raw_data)
-        except ValueError, HTTPException, LineTooLong:
-            # TODO STOPPED HERE
-            raise
-        response = forwarder.forward()
+            response = forwarder.forward()
+        except (ValueError, HTTPException, LineTooLong,
+                RequestException, AttributeError) as err:
+            logger.debug("Unable to forward email: %s", err)
+            continue
 
-        # TODO: Check that the candidate has a valid package,
-        # if so, delete the message (if you want)
-        # get the response from the server
-        # reply with that message
+        logger.debug("Received response\n%s", response)
+
+        print(email_candidate['subject'])
+        print(response)
+
+        email_connection.reply(response.content, email_candidate)
 
 
 
