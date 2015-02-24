@@ -1,31 +1,26 @@
+from io import BytesIO
 import base64
-import logging
 
+import os
 import smtplib
+import imaplib
+import logging
 
 import email
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
+
+import getpass
 from http.client import parse_headers
-from io import BytesIO
 
 import petname
 
 import imaplib2
 import requests
 
-import getpass
-import os
-import smtplib
-import imaplib
-
-import logging
-
 
 
 logger = logging.getLogger(__name__)
-
-MAIL_PREFIX = '[MailTunnel]'
 
 
 class EmailException(Exception):
@@ -43,8 +38,8 @@ class Settings:
 
     # SMTP settings
     # Set these to your usual outgoing SMTP settings.
-    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')  # smtp.gmail.com
-    SMTP_USER = os.environ.get('SMTP_USER')  # example@gmail.com
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', '')  # smtp.gmail.com
+    SMTP_USER = os.environ.get('SMTP_USER', '')  # example@gmail.com
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')  # BaDPaSSwOrd
 
     # You must use SSL for most commercial SMTP servers e.g gmail
@@ -62,6 +57,8 @@ class Settings:
 
     FROM_EMAIL = SMTP_USER
     TO_EMAIL = os.environ.get('TO_EMAIL', SMTP_USER)
+
+    MAIL_PREFIX = '[MailTunnel]'
 
     def __init__(self, **kwargs):
         self._configured = False
@@ -292,7 +289,6 @@ class EmailConnection:
         self.smtp.sendmail(from_email, [to_email], package.as_string())
         return package
 
-
     def fetch(self, subject=None, email_from=None):
         """Fetch the email response corresponding to a specific request
 
@@ -327,6 +323,7 @@ class EmailConnection:
                 break
         unique_ids = search_results[0].split()
         if len(unique_ids) > 1:
+            # TODO: Use a queue to deal with multiple emails
             logger.warn("Too many responses from search query SUBJECT %s",
                         subject)
 
