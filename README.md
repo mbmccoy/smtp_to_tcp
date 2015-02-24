@@ -6,17 +6,28 @@ to be done.
 
 You've woken up and found yourself in the middle of a desert with only 
 one tool: a satellite phone with access to a single email account. You 
-really, really want to check hacker news. It's time for `smtp_to_tcp`.
+really, really want to check (reddit)[http://www.reddit.com]. It's time
+for `smtp_to_tcp`.
+
+# Set up
+
+**WARNING**
+
+*Given the chance, this code will kill you and everyone you care 
+about.* Make sure to thoroughly test all of these settings before you 
+embark on a journey into the desert, and note that the code is not
+designed for high-reliability needs. You've been warned.
 
 ## Basic requirements
 
 While you can test-drive this software with only one computer, you'll 
-find it's only useful if you use at least two computers.  We'll call 
-these computers the `local` and the `remote` machines. 
+only be able to use it in the desert if you've set up at least 
+two computers.  We'll call these computers the `local` and the `remote`
+machines. 
 
-  - You'll use the `local` machine to browse the internet using only 
-  your email connection. The local machine needs access to an SMTP 
-  and IMAP server. 
+  - The `local` machine lets you browse the internet using your email 
+  connection. The local machine needs access to an SMTP and IMAP 
+  server. 
   
   - The `remote` machine reads emails from the local machine and 
    fetches the requested data from the internet.  The remote machine 
@@ -37,9 +48,6 @@ to check that your email supports IDLE push.
 
 ## Installation (both machines)
 
-*Given the chance, this code will kill you and everyone you care 
-about.* Make sure to test all of these settings before you embark on a
-journey into the desert.
 
 To start, first install `python3`  on both the `local` and `remote` 
 machines. The code was tested with python 3.4, and your mileage may 
@@ -84,10 +92,14 @@ instructions apply to Firefox on a Mac.**
   4. Click `OK`.
   
 If everything works, you should be able to access the internet. Try 
-[hacker news](http://news.ycombinator.com) or [reddit](http://www.reddit.com). 
+[hacker news](http://news.ycombinator.com) or 
+[reddit](http://www.reddit.com). 
 
 # Questions?
  
+ Submit an issue, or email me at `my_address`, where
+ 
+     my_address = '.'.join(['michael', 'b', 'mccoy', '@', 'gmail', 'com'])
  
 
 # TODO
