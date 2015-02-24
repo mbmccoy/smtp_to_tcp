@@ -10,47 +10,88 @@ really, really want to check hacker news. It's time for `smtp_to_tcp`.
 
 ## Basic requirements
 
-This package requires two computers, the `local` and the `remote`. 
+While you can test-drive this software with only one computer, you'll 
+find it's only useful if you use at least two computers.  We'll call 
+these computers the `local` and the `remote` machines. 
 
-  - The `local` machine is the one that you want to use to browse
-   the internet using only an email connection. 
+  - You'll use the `local` machine to browse the internet using only 
+  your email connection. The local machine needs access to an SMTP 
+  and IMAP server. 
   
-  - The `remote` machine reads emails from the local machine, and 
-   fetches the requested data from the internet, and it sends replies 
-   to the local machine.
+  - The `remote` machine reads emails from the local machine and 
+   fetches the requested data from the internet.  The remote machine 
+   should have unfettered access to the internet.
 
-TODO: Picture illustrating this setup
+If you just want to test-drive the code, open up two different 
+terminals, one for the `local` machine and one for the `remote` machine.
 
-You'll first need to install `python3` is installed on both machines. Then
-you'll need install the packages listed in `requirements.txt`. With `pip`,
-the process is painless:
+(TODO: Picture illustrating this basic architecture)
+
+**Note:** The code uses IMAP IDLE push notifications to lower the 
+latency of the connection somewhat.  This works well for Google's 
+Gmail, but some email providers do not support this convenient 
+protocol (*cough* Yahoo! *cough*). Use your [google fu] [google-fu] 
+to check that your email supports push.
+ 
+[google-fu]: http://www.urbandictionary.com/define.php?term=google-fu
+
+## Installation (both machines)
+
+*Given the chance, this code will kill you and everyone you care 
+about.* Make sure to test all of these settings before you embark on a
+journey into the desert. 
+
+To start, first install `python3`  on both the `local` and `remote` 
+machines. The code was tested with python 3.4, and your mileage may 
+vary with different versions.
+
+You'll also want to install the packages listed in `requirements.txt`. 
+The `pip` package manager makes the process painless:
     
      >>> pip3 install -r requirements.txt
 
+## Setting up your `remote` machine
 
+To start the server on the `remote` machine, run the following code
 
-### Requirements 
+    >>> python3 -m email_to_tcp --remote 
 
+You will be prompted with a series of questions about your email 
+username and password. If you see a success message, you are good to 
+go. This process needs to be running as long as you want to access the 
+internet.
 
+## Setting up your `local` machine
 
+This service requires a bit more work. First, we start the local proxy 
+server:
 
- 
+    >>> python3 -m email_to_tcp --local
+    
+You'll again be prompted with a series of questions. Make sure that 
+the `email-to` address matches the email account that the `remote` 
+machine is monitoring. 
 
- 
- 
- 
+Once you see the success message, it's time to tell your browser to 
+use this special proxy server to access the internet.  **The easiest 
+way to do this involves using firefox.**  Other
 
-
+Assumming that you chose the 
+default settings above, you need to set the address 
 
 ### TODO
 
  - Support HTTPS
+ 
+ - Support IMAP servers that don't use IDLE push notifications 
    
  - Multi-thread requests
+ 
+ - Write meaningful tests 
 
 # Architecture
 
-SMTP-to-TCP requires two pieces of software in order for you to access 
+SMTP-to-TCP requires two pieces of software in order for you to access
 the internet through an SMTP server and IMAP mailbox that you have 
 access to. The code involves a local proxy server (`proxy.py`) and a
 remote custom SMTP server (`remote.py`).
