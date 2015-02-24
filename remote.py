@@ -4,7 +4,6 @@ from http.client import HTTPException, LineTooLong
 from requests.exceptions import RequestException
 import sys
 
-from configure import remote_settings
 import utils
 
 logger = logging.getLogger(
@@ -33,10 +32,10 @@ def run(settings):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=remote_settings.LOGGING_LEVEL)
+    logging.basicConfig(level=utils.settings.LOGGING_LEVEL)
 
     try:
-        run(settings=remote_settings)
+        run(settings=utils.settings)
     except KeyboardInterrupt:
         sys.exit(0)
     sys.exit(-1)

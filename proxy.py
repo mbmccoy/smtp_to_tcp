@@ -2,7 +2,6 @@ import logging
 import socketserver
 from io import BytesIO
 
-from configure import proxy_settings
 import utils
 
 logger = logging.getLogger(
@@ -13,7 +12,7 @@ logger = logging.getLogger(
 class TCPProxyHandler(socketserver.BaseRequestHandler):
     chunk_size = 4096
 
-    email_connection = utils.EmailConnection(proxy_settings)
+    email_connection = utils.EmailConnection(utils.proxy_settings)
 
     def handle(self):
         logger.debug("%s connected", self.client_address[0])
@@ -40,7 +39,7 @@ class TCPProxyHandler(socketserver.BaseRequestHandler):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    print(proxy_settings)
+
     HOST, PORT = "localhost", 9999
     logger.debug("Creating proxy server at {}:{}".format(HOST, PORT))
 

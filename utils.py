@@ -14,7 +14,14 @@ import petname
 import imaplib2
 import requests
 
-from configure import proxy_settings
+import getpass
+import os
+import smtplib
+import imaplib
+
+import logging
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +34,6 @@ class EmailException(Exception):
 
 class FormatException(Exception):
     pass
-
-
-import getpass
-import os
-import smtplib
-import imaplib
-
-import logging
 
 
 class Settings:
@@ -120,7 +119,7 @@ class Settings:
                           if name == name.upper()])
 
 proxy_settings = Settings()
-remote_settings = Settings()
+settings = Settings()
 
 
 def generate_filename():
