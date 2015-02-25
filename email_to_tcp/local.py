@@ -29,9 +29,14 @@ class TCPProxyHandler(socketserver.BaseRequestHandler):
         data = b''
         while True:
             try:
-                data += self.request.recv(self.chunk_size)
+                new_data = self.request.recv(self.chunk_size)
             except BlockingIOError:
                 break
+            data += new_data
+            if not new_data or new_data.endswith(b'\r\n\r\n'):
+                break
+
+
         logger.debug("%s", data)
         subject = self.email_connection.send(data)
 
@@ -117,6 +122,7 @@ if __name__ == "__main__":
     try:
         tcp_server.serve_forever()
     except KeyboardInterrupt:
+        print("Caught interrupt.")
         pass
     finally:
         tcp_server.shutdown()
