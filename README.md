@@ -48,10 +48,9 @@ to check that your email supports IDLE push.
 
 ## Installation (both machines)
 
-
-To start, first install `python3`  on both the `local` and `remote` 
-machines. The code was tested with python 3.4, and your mileage may 
-vary with different versions.
+To start, first install `python3` and `pip3` on both the `local` and 
+`remote` machines. The code was tested with python 3.4, and your mileage 
+may vary with different versions.
 
 You'll also want to install the packages listed in `requirements.txt`. 
 The `pip` package manager makes the process painless:

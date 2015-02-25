@@ -94,7 +94,7 @@ def configure(s=utils.proxy_settings):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     settings = configure(settings)
     print("======================================")

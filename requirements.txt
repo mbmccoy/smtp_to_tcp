@@ -1,3 +1,4 @@
 imaplib2==2.38.0
 petname==1.7
+pyttsx==1.1
 requests==2.5.1

@@ -37,15 +37,18 @@ def run(settings):
 
 
 def configure(s=utils.proxy_settings):
+    default_smtp = 'smtp.gmail.com'
     if not s.SMTP_SERVER:
-        s.SMTP_SERVER = input("Enter the SMTP server that the remote server will "
-                              "email from (ex: smtp.gmail.com): \n")
+        s.SMTP_SERVER = (
+            input("Enter the SMTP server that the remote server "
+                  "will email from (default: %s): \n" % default_smtp)
+            or default_smtp
+        )
+
     if not s.SMTP_USER:
         s.SMTP_USER = input("SMTP username (ex: example@gmail.com):\n")
-
     if not s.SMTP_PASSWORD:
         s.SMTP_PASSWORD = getpass("SMTP password: ")
-
     if not os.environ.get('SMTP_USE_SSL'):
         s.SMTP_USE_SSL = bool(input("Use SSL? [Y/n]").lower() != 'n')
         default_port = s.SMTP_USE_SSL and \
@@ -53,9 +56,13 @@ def configure(s=utils.proxy_settings):
         s.SMTP_PORT = int(input("Port (default %d): " % default_port)
                           or default_port)
 
+    default_imap = 'imap.gmail.com'
     if not s.IMAP_SERVER:
-        s.IMAP_SERVER = input("Enter the IMAP server that the remote server "
-                              "will listen to (ex: imap.gmail.com): \n")
+        s.IMAP_SERVER = (
+            input("Enter the IMAP server that the remote server "
+            "will listen to (default: %s): \n" % default_imap)
+            or default_imap
+        )
     if not s.IMAP_USER:
         s.IMAP_USER = input("The IMAP username (default %s): \n"
                             % s.SMTP_USER) or s.SMTP_USER
